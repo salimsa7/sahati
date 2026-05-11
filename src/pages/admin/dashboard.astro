@@ -1,0 +1,98 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) return Astro.redirect('/admin/login');
+
+const { data: admin } = await supabase
+	.from('admins')
+	.select('*')
+	.eq('id', user.id)
+	.single();
+
+const adminName = admin?.name || 'Administrator';
+---
+
+<AdminLayout title="Admin Dashboard | Sahati Gym">
+	<section class="welcome">
+		<h1>Welcome, {adminName}</h1>
+		<p>System-wide management and monitoring.</p>
+	</section>
+
+	<section class="admin-grid">
+		<a href="/admin/manage-members" class="admin-card">
+			<div class="icon">👥</div>
+			<h3>Manage Members</h3>
+			<p>Add, edit, or remove member accounts.</p>
+		</a>
+
+		<a href="/admin/manage-staff" class="admin-card">
+			<div class="icon">👔</div>
+			<h3>Manage Staff</h3>
+			<p>Control gym staff access and profiles.</p>
+		</a>
+
+		<a href="/admin/subscriptions" class="admin-card">
+			<div class="icon">📋</div>
+			<h3>Subscriptions</h3>
+			<p>Monitor and override member subscriptions.</p>
+		</a>
+
+		<a href="/admin/logs" class="admin-card">
+			<div class="icon">📜</div>
+			<h3>Access Logs</h3>
+			<p>Review gym entry and exit history.</p>
+		</a>
+	</section>
+</AdminLayout>
+
+<style>
+	.welcome {
+		margin-bottom: 3rem;
+	}
+
+	h1 {
+		font-size: 2.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.admin-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 2rem;
+	}
+
+	.admin-card {
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 2.5rem;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		text-align: center;
+		text-decoration: none;
+		transition: transform 0.3s, background-color 0.3s;
+	}
+
+	.admin-card:hover {
+		transform: translateY(-5px);
+		background-color: rgba(255, 255, 255, 0.08);
+		border-color: var(--color-button);
+	}
+
+	.icon {
+		font-size: 3rem;
+		margin-bottom: 1.5rem;
+	}
+
+	h3 {
+		margin: 0 0 1rem 0;
+		font-size: 1.5rem;
+		color: var(--color-button);
+	}
+
+	p {
+		margin: 0;
+		opacity: 0.8;
+		line-height: 1.5;
+	}
+</style>

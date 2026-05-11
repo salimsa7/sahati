@@ -1,0 +1,25 @@
+---
+import Layout from './Layout.astro';
+import Navbar from '../components/Navbar.astro';
+
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<Layout title={title}>
+	<Navbar role="member" />
+	<main class="page-content">
+		<slot />
+	</main>
+</Layout>
+
+<style>
+	.page-content {
+		padding: 2rem;
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+</style>

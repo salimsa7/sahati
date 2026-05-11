@@ -1,0 +1,79 @@
+---
+interface Props {
+	plan: {
+		name: string;
+		price: string;
+		features: string[];
+		color: string;
+	};
+}
+
+const { plan } = Astro.props;
+---
+
+<div class="card" style={`--accent: ${plan.color}`}>
+	<div class="header">
+		<h3>{plan.name}</h3>
+		<div class="price">{plan.price}</div>
+	</div>
+	<ul class="features">
+		{plan.features.map(feature => (
+			<li>{feature}</li>
+		))}
+	</ul>
+</div>
+
+<style>
+	.card {
+		background-color: rgba(255, 255, 255, 0.05);
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		overflow: hidden;
+		transition: transform 0.3s;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.card:hover {
+		transform: translateY(-5px);
+		border-color: var(--accent);
+	}
+
+	.header {
+		background-color: var(--accent);
+		padding: 2rem;
+		text-align: center;
+		color: #124e66;
+	}
+
+	h3 {
+		margin: 0;
+		font-size: 1.5rem;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+	}
+
+	.price {
+		font-size: 2rem;
+		font-weight: bold;
+		margin-top: 0.5rem;
+	}
+
+	.features {
+		list-style: none;
+		padding: 2rem;
+		margin: 0;
+		flex-grow: 1;
+	}
+
+	.features li {
+		padding: 0.5rem 0;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		font-size: 0.95rem;
+		opacity: 0.9;
+	}
+
+	.features li:last-child {
+		border-bottom: none;
+	}
+</style>

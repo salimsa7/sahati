@@ -1,0 +1,188 @@
+---
+import MemberLayout from '../../layouts/MemberLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) return Astro.redirect('/member/login');
+
+const { data: profile } = await supabase
+	.from('users')
+	.select('*')
+	.eq('id', user.id)
+	.single();
+---
+
+<MemberLayout title="My Profile | Sahati Gym">
+	<section class="profile-container">
+		<h1>My Profile</h1>
+
+		<div class="card readonly-info">
+			<h2>Personal Information</h2>
+			<div class="form-group">
+				<label>Full Name</label>
+				<input type="text" value={profile?.name} readonly />
+			</div>
+			<div class="form-group">
+				<label>Email Address</label>
+				<input type="email" value={profile?.email} readonly />
+			</div>
+			<div class="form-group">
+				<label>Phone Number</label>
+				<input type="tel" value={profile?.phone} readonly />
+			</div>
+			<p class="notice">To update your name, email, or phone number, please contact gym staff.</p>
+		</div>
+
+		<div class="card change-password">
+			<h2>Change Password</h2>
+			<form id="password-form">
+				<div class="form-group">
+					<label for="new-password">New Password</label>
+					<input type="password" id="new-password" name="newPassword" required minlength="6" />
+				</div>
+				<div class="form-group">
+					<label for="confirm-password">Confirm New Password</label>
+					<input type="password" id="confirm-password" name="confirmNewPassword" required minlength="6" />
+				</div>
+				<button type="submit" class="btn">Update Password</button>
+			</form>
+			<div id="password-message" class="message"></div>
+		</div>
+	</section>
+</MemberLayout>
+
+<script>
+	import { supabase } from '../../lib/supabase';
+
+	const form = document.getElementById('password-form') as HTMLFormElement;
+	const messageDiv = document.getElementById('password-message');
+
+	form?.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const formData = new FormData(form);
+		const newPassword = formData.get('newPassword') as string;
+		const confirmNewPassword = formData.get('confirmNewPassword') as string;
+		const submitBtn = form.querySelector('button[type="submit"]');
+
+		if (newPassword !== confirmNewPassword) {
+			if (messageDiv) {
+				messageDiv.textContent = 'Passwords do not match';
+				messageDiv.className = 'message error';
+			}
+			return;
+		}
+
+		submitBtn?.classList.add('loading');
+		if (messageDiv) messageDiv.textContent = '';
+
+		const { error } = await supabase.auth.updateUser({
+			password: newPassword
+		});
+
+		submitBtn?.classList.remove('loading');
+
+		if (error) {
+			if (messageDiv) {
+				messageDiv.textContent = error.message;
+				messageDiv.className = 'message error';
+			}
+		} else {
+			if (messageDiv) {
+				messageDiv.textContent = 'Password updated successfully!';
+				messageDiv.className = 'message success';
+			}
+			form.reset();
+		}
+	});
+</script>
+
+<style>
+	.profile-container {
+		max-width: 600px;
+		margin: 0 auto;
+	}
+
+	h1 {
+		margin-bottom: 2rem;
+		text-align: center;
+	}
+
+	.card {
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 2rem;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		margin-bottom: 2rem;
+	}
+
+	h2 {
+		margin-top: 0;
+		margin-bottom: 1.5rem;
+		font-size: 1.2rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+		padding-bottom: 0.5rem;
+	}
+
+	.form-group {
+		margin-bottom: 1.2rem;
+	}
+
+	label {
+		display: block;
+		margin-bottom: 0.4rem;
+		font-size: 0.9rem;
+		opacity: 0.8;
+	}
+
+	input {
+		width: 100%;
+		padding: 0.8rem;
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		background-color: rgba(0, 0, 0, 0.2);
+		color: white;
+		font-size: 1rem;
+	}
+
+	input[readonly] {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.notice {
+		font-size: 0.85rem;
+		font-style: italic;
+		opacity: 0.7;
+		margin-top: 1rem;
+	}
+
+	.btn {
+		width: 100%;
+		padding: 0.8rem;
+		background-color: var(--color-button);
+		color: #124e66;
+		border: none;
+		border-radius: 6px;
+		font-weight: bold;
+		cursor: pointer;
+		margin-top: 1rem;
+	}
+
+	.message {
+		margin-top: 1rem;
+		padding: 0.8rem;
+		border-radius: 6px;
+		text-align: center;
+		font-weight: 500;
+	}
+
+	.message.error {
+		background-color: rgba(244, 67, 54, 0.1);
+		color: #f44336;
+	}
+
+	.message.success {
+		background-color: rgba(76, 175, 80, 0.1);
+		color: #4caf50;
+	}
+</style>

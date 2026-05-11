@@ -1,0 +1,245 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import QRScanner from '../../components/QRScanner.astro';
+---
+
+<StaffLayout title="QR Verification | Sahati Gym">
+	<section class="verify-container">
+		<h1>QR Access Verification</h1>
+		
+		<div class="tabs">
+			<button class="tab-btn active" data-tab="scanner">Webcam Scanner</button>
+			<button class="tab-btn" data-tab="manual">Manual Entry</button>
+		</div>
+
+		<div id="scanner-tab" class="tab-content active">
+			<QRScanner />
+		</div>
+
+		<div id="manual-tab" class="tab-content">
+			<div class="manual-form">
+				<label for="qr-token">Enter QR Token</label>
+				<input type="text" id="qr-token" placeholder="Paste UUID token here..." />
+				<button id="manual-verify-btn" class="btn">Verify Token</button>
+			</div>
+		</div>
+
+		<div id="result-overlay" class="result-overlay hidden">
+			<div class="result-card">
+				<div id="result-icon" class="result-icon"></div>
+				<h2 id="result-title"></h2>
+				<div id="result-details" class="result-details"></div>
+				<button id="close-result" class="btn">Dismiss</button>
+			</div>
+		</div>
+	</section>
+</StaffLayout>
+
+<script>
+	const tabs = document.querySelectorAll('.tab-btn');
+	const tabContents = document.querySelectorAll('.tab-content');
+	const manualVerifyBtn = document.getElementById('manual-verify-btn');
+	const qrInput = document.getElementById('qr-token') as HTMLInputElement;
+	const resultOverlay = document.getElementById('result-overlay');
+	const closeResultBtn = document.getElementById('close-result');
+
+	tabs.forEach(tab => {
+		tab.addEventListener('click', () => {
+			const target = (tab as HTMLElement).dataset.tab;
+			tabs.forEach(t => t.classList.remove('active'));
+			tab.classList.add('active');
+			tabContents.forEach(c => {
+				c.classList.remove('active');
+				if (c.id === `${target}-tab`) c.classList.add('active');
+			});
+		});
+	});
+
+	async function verifyToken(token: string) {
+		try {
+			const response = await fetch('/api/staff/verify-qr', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ token })
+			});
+			const result = await response.json();
+			showResult(result);
+		} catch (error) {
+			console.error('Verification failed', error);
+		}
+	}
+
+	function showResult(result: any) {
+		const title = document.getElementById('result-title');
+		const details = document.getElementById('result-details');
+		const icon = document.getElementById('result-icon');
+		const card = document.querySelector('.result-card');
+
+		if (result.success) {
+			title!.textContent = 'Access Granted';
+			card!.classList.add('success');
+			card!.classList.remove('error');
+			icon!.textContent = '✅';
+			details!.innerHTML = `
+				<p><strong>Name:</strong> ${result.member.name}</p>
+				<p><strong>Plan:</strong> ${result.member.plan}</p>
+				<p><strong>Expiry:</strong> ${new Date(result.member.expiry).toLocaleDateString()}</p>
+			`;
+		} else {
+			title!.textContent = 'Access Denied';
+			card!.classList.add('error');
+			card!.classList.remove('success');
+			icon!.textContent = '❌';
+			details!.innerHTML = `<p>${result.message}</p>`;
+		}
+
+		resultOverlay!.classList.remove('hidden');
+	}
+
+	window.addEventListener('qr-scanned', (e: any) => {
+		verifyToken(e.detail.token);
+	});
+
+	manualVerifyBtn?.addEventListener('click', () => {
+		const token = qrInput.value.trim();
+		if (token) {
+			manualVerifyBtn.classList.add('loading');
+			verifyToken(token).finally(() => {
+				manualVerifyBtn.classList.remove('loading');
+			});
+		}
+	});
+
+	closeResultBtn?.addEventListener('click', () => {
+		resultOverlay!.classList.add('hidden');
+	});
+</script>
+
+<style>
+	.verify-container {
+		max-width: 600px;
+		margin: 0 auto;
+		text-align: center;
+	}
+
+	h1 {
+		margin-bottom: 2rem;
+	}
+
+	.tabs {
+		display: flex;
+		justify-content: center;
+		gap: 1rem;
+		margin-bottom: 2rem;
+	}
+
+	.tab-btn {
+		background: none;
+		border: 1px solid var(--color-button);
+		color: var(--color-button);
+		padding: 0.6rem 1.2rem;
+		border-radius: 6px;
+		cursor: pointer;
+		font-weight: bold;
+	}
+
+	.tab-btn.active {
+		background-color: var(--color-button);
+		color: #124e66;
+	}
+
+	.tab-content {
+		display: none;
+	}
+
+	.tab-content.active {
+		display: block;
+	}
+
+	.manual-form {
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 2rem;
+		border-radius: 12px;
+		text-align: left;
+	}
+
+	label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: 500;
+	}
+
+	input {
+		width: 100%;
+		padding: 0.8rem;
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		background-color: rgba(0, 0, 0, 0.2);
+		color: white;
+		margin-bottom: 1.5rem;
+	}
+
+	.btn {
+		width: 100%;
+		padding: 0.8rem;
+		background-color: var(--color-button);
+		color: #124e66;
+		border: none;
+		border-radius: 6px;
+		font-weight: bold;
+		cursor: pointer;
+	}
+
+	/* Result Overlay */
+	.result-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.8);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+	}
+
+	.result-overlay.hidden {
+		display: none;
+	}
+
+	.result-card {
+		background-color: #1a1a1a;
+		padding: 3rem;
+		border-radius: 20px;
+		max-width: 400px;
+		width: 90%;
+		text-align: center;
+		border: 4px solid transparent;
+	}
+
+	.result-card.success {
+		border-color: #4caf50;
+	}
+
+	.result-card.error {
+		border-color: #f44336;
+	}
+
+	.result-icon {
+		font-size: 4rem;
+		margin-bottom: 1rem;
+	}
+
+	.result-details {
+		margin: 1.5rem 0;
+		text-align: left;
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 1rem;
+		border-radius: 8px;
+	}
+
+	.result-details p {
+		margin: 0.5rem 0;
+	}
+</style>

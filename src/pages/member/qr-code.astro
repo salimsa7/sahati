@@ -1,0 +1,108 @@
+---
+import MemberLayout from '../../layouts/MemberLayout.astro';
+import { supabase } from '../../lib/supabase';
+import QRCode from 'qrcode';
+
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) return Astro.redirect('/member/login');
+
+const { data: profile } = await supabase
+	.from('users')
+	.select('*')
+	.eq('id', user.id)
+	.single();
+
+const { data: qrData } = await supabase
+	.from('qr_tokens')
+	.select('token')
+	.eq('user_id', user.id)
+	.single();
+
+let qrCodeUrl = '';
+if (qrData?.token) {
+	qrCodeUrl = await QRCode.toDataURL(qrData.token, {
+		color: {
+			dark: '#124e66',
+			light: '#d3d9d4'
+		},
+		width: 300
+	});
+}
+---
+
+<MemberLayout title="My QR Code | Sahati Gym">
+	<section class="qr-container">
+		<h1>My Access QR Code</h1>
+		<p>Show this code to the gym staff or scan it at the entrance.</p>
+
+		<div class="qr-box">
+			{qrCodeUrl ? (
+				<img src={qrCodeUrl} alt="My QR Code" class="qr-image" />
+			) : (
+				<div class="error">QR Code not found. Please contact staff.</div>
+			)}
+			
+			<div class="member-info">
+				<div class="name">{profile?.name}</div>
+				<div class="id">Member ID: {user.id.substring(0, 8)}</div>
+			</div>
+		</div>
+
+		<p class="notice">This QR code is permanent and does not change.</p>
+	</section>
+</MemberLayout>
+
+<style>
+	.qr-container {
+		text-align: center;
+		max-width: 500px;
+		margin: 0 auto;
+	}
+
+	h1 {
+		margin-bottom: 0.5rem;
+	}
+
+	.qr-box {
+		background-color: var(--color-button);
+		padding: 2rem;
+		border-radius: 12px;
+		margin: 2rem 0;
+		color: #124e66;
+	}
+
+	.qr-image {
+		width: 100%;
+		max-width: 300px;
+		height: auto;
+		border-radius: 8px;
+		margin-bottom: 1.5rem;
+	}
+
+	.member-info {
+		border-top: 1px solid rgba(18, 78, 102, 0.2);
+		padding-top: 1.5rem;
+	}
+
+	.name {
+		font-size: 1.5rem;
+		font-weight: bold;
+	}
+
+	.id {
+		font-family: monospace;
+		opacity: 0.8;
+		margin-top: 0.2rem;
+	}
+
+	.notice {
+		font-size: 0.9rem;
+		opacity: 0.7;
+	}
+
+	.error {
+		color: #f44336;
+		font-weight: bold;
+		padding: 2rem;
+	}
+</style>

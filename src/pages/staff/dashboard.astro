@@ -1,0 +1,92 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) return Astro.redirect('/staff/login');
+
+const { data: staff } = await supabase
+	.from('staff')
+	.select('*')
+	.eq('id', user.id)
+	.single();
+
+const staffName = staff?.name || 'Staff Member';
+---
+
+<StaffLayout title="Staff Dashboard | Sahati Gym">
+	<section class="welcome">
+		<h1>Welcome, {staffName}</h1>
+		<p>Manage gym access and member subscriptions.</p>
+	</section>
+
+	<section class="quick-actions">
+		<a href="/staff/qr-verify" class="action-card">
+			<div class="icon">🔍</div>
+			<h3>QR Verification</h3>
+			<p>Scan member QR codes for access control.</p>
+		</a>
+
+		<a href="/staff/member-search" class="action-card">
+			<div class="icon">👥</div>
+			<h3>Member Search</h3>
+			<p>Look up member details and status.</p>
+		</a>
+
+		<a href="/staff/renew-subscription" class="action-card">
+			<div class="icon">💳</div>
+			<h3>Renew Subscription</h3>
+			<p>Update member plans and end dates.</p>
+		</a>
+	</section>
+</StaffLayout>
+
+<style>
+	.welcome {
+		margin-bottom: 3rem;
+	}
+
+	h1 {
+		font-size: 2.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.quick-actions {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 2rem;
+	}
+
+	.action-card {
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 2.5rem;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		text-align: center;
+		text-decoration: none;
+		transition: transform 0.3s, background-color 0.3s;
+	}
+
+	.action-card:hover {
+		transform: translateY(-5px);
+		background-color: rgba(255, 255, 255, 0.08);
+		border-color: var(--color-button);
+	}
+
+	.icon {
+		font-size: 3rem;
+		margin-bottom: 1.5rem;
+	}
+
+	h3 {
+		margin: 0 0 1rem 0;
+		font-size: 1.5rem;
+		color: var(--color-button);
+	}
+
+	p {
+		margin: 0;
+		opacity: 0.8;
+		line-height: 1.5;
+	}
+</style>

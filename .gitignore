@@ -12,6 +12,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.vscode/
 
 # environment variables
 .env
@@ -22,3 +23,12 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+
+#AI# AI-generated code
+graphify-out/
+.github/
+supabase_schema.sql
+GEMINI.md
+.gemini/
+.graphifyignore

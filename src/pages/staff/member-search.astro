@@ -1,0 +1,177 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+---
+
+<StaffLayout title="Member Search | Sahati Gym">
+	<section class="search-container">
+		<h1>Member Search</h1>
+		
+		<div class="search-box">
+			<input type="text" id="search-input" placeholder="Search by name, email, phone, or ID..." />
+			<button id="search-btn" class="btn">Search</button>
+		</div>
+
+		<div id="results-container" class="results-container">
+			<p class="placeholder">Enter a search term to find members.</p>
+		</div>
+	</section>
+</StaffLayout>
+
+<script>
+	const searchInput = document.getElementById('search-input') as HTMLInputElement;
+	const searchBtn = document.getElementById('search-btn');
+	const resultsContainer = document.getElementById('results-container');
+
+	async function performSearch() {
+		const query = searchInput.value.trim();
+		if (!query) return;
+
+		searchBtn?.classList.add('loading');
+		resultsContainer!.innerHTML = '<div class="loading">Searching...</div>';
+
+		try {
+			const response = await fetch(`/api/staff/search-member?q=${encodeURIComponent(query)}`);
+			const results = await response.json();
+			displayResults(results);
+		} catch (error) {
+			resultsContainer!.innerHTML = '<div class="error">Search failed.</div>';
+		} finally {
+			searchBtn?.classList.remove('loading');
+		}
+	}
+
+	function displayResults(results: any[]) {
+		if (results.length === 0) {
+			resultsContainer!.innerHTML = '<p class="no-results">No members found matching your search.</p>';
+			return;
+		}
+
+		resultsContainer!.innerHTML = results.map(member => {
+			const sub = member.subscriptions?.[0];
+			const isActive = sub?.status === 'Active' && new Date(sub.end_date) > new Date();
+			
+			return `
+				<div class="member-card">
+					<div class="member-header">
+						<h3>${member.name}</h3>
+						<span class="status-badge" data-active="${isActive}">${isActive ? 'Active' : (sub ? 'Expired' : 'No Sub')}</span>
+					</div>
+					<div class="member-details">
+						<p><strong>Email:</strong> ${member.email}</p>
+						<p><strong>Phone:</strong> ${member.phone}</p>
+						<p><strong>ID:</strong> ${member.id}</p>
+						<hr />
+						<p><strong>Plan:</strong> ${sub?.plan || 'N/A'}</p>
+						<p><strong>Expiry:</strong> ${sub ? new Date(sub.end_date).toLocaleDateString() : 'N/A'}</p>
+					</div>
+				</div>
+			`;
+		}).join('');
+	}
+
+	searchBtn?.addEventListener('click', performSearch);
+	searchInput?.addEventListener('keypress', (e) => {
+		if (e.key === 'Enter') performSearch();
+	});
+</script>
+
+<style>
+	.search-container {
+		max-width: 800px;
+		margin: 0 auto;
+	}
+
+	h1 {
+		margin-bottom: 2rem;
+		text-align: center;
+	}
+
+	.search-box {
+		display: flex;
+		gap: 1rem;
+		margin-bottom: 3rem;
+	}
+
+	input {
+		flex-grow: 1;
+		padding: 0.8rem 1.2rem;
+		border-radius: 8px;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		background-color: rgba(0, 0, 0, 0.2);
+		color: white;
+		font-size: 1.1rem;
+	}
+
+	.btn {
+		padding: 0.8rem 2rem;
+		background-color: var(--color-button);
+		color: #124e66;
+		border: none;
+		border-radius: 8px;
+		font-weight: bold;
+		cursor: pointer;
+	}
+
+	.results-container {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+		gap: 1.5rem;
+	}
+
+	.member-card {
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 1.5rem;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.member-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 1rem;
+	}
+
+	h3 {
+		margin: 0;
+		font-size: 1.2rem;
+	}
+
+	.status-badge {
+		padding: 0.2rem 0.6rem;
+		border-radius: 20px;
+		font-size: 0.8rem;
+		font-weight: bold;
+		text-transform: uppercase;
+	}
+
+	.status-badge[data-active="true"] {
+		background-color: #4caf50;
+		color: white;
+	}
+
+	.status-badge[data-active="false"] {
+		background-color: #f44336;
+		color: white;
+	}
+
+	.member-details p {
+		margin: 0.5rem 0;
+		font-size: 0.9rem;
+		opacity: 0.9;
+	}
+
+	hr {
+		border: none;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+		margin: 1rem 0;
+	}
+
+	.placeholder, .no-results, .loading, .error {
+		grid-column: 1 / -1;
+		text-align: center;
+		padding: 3rem;
+		opacity: 0.6;
+		font-style: italic;
+	}
+</style>

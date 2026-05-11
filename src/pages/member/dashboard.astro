@@ -1,0 +1,168 @@
+---
+import MemberLayout from '../../layouts/MemberLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) return Astro.redirect('/member/login');
+
+const { data: profile } = await supabase
+	.from('users')
+	.select('*')
+	.eq('id', user.id)
+	.single();
+
+const { data: subscription } = await supabase
+	.from('subscriptions')
+	.select('*')
+	.eq('user_id', user.id)
+	.single();
+
+const firstName = profile?.name.split(' ')[0] || 'Member';
+
+const isSubscriptionActive = subscription?.status === 'active' && new Date(subscription.end_date) > new Date();
+
+const daysRemaining = subscription ? Math.ceil((new Date(subscription.end_date).getTime() - new Date().getTime()) / (1000 * 3600 * 24)) : 0;
+---
+
+<MemberLayout title="Dashboard | Sahati Gym">
+	<section class="welcome">
+		<h1>Welcome, {firstName}</h1>
+		<p>Manage your membership and access your QR code here.</p>
+	</section>
+
+	<section class="dashboard-grid">
+		<div class="card subscription-card">
+			<h2>Subscription Status</h2>
+			{subscription ? (
+				<div class="status-info">
+					<div class="status-badge" data-active={isSubscriptionActive}>
+						{isSubscriptionActive ? 'Active' : 'Expired'}
+					</div>
+					<div class="info-row">
+						<span>Plan:</span>
+						<strong>{subscription.plan}</strong>
+					</div>
+					<div class="info-row">
+						<span>Start Date:</span>
+						<strong>{new Date(subscription.start_date).toLocaleDateString()}</strong>
+					</div>
+					<div class="info-row">
+						<span>End Date:</span>
+						<strong>{new Date(subscription.end_date).toLocaleDateString()}</strong>
+					</div>
+					{isSubscriptionActive && (
+						<div class="info-row highlight">
+							<span>Days Remaining:</span>
+							<strong>{daysRemaining} days</strong>
+						</div>
+					)}
+				</div>
+			) : (
+				<p>No active subscription found. Please contact the front desk to join a plan.</p>
+			)}
+		</div>
+
+		<div class="card quick-actions">
+			<h2>Quick Actions</h2>
+			<div class="action-buttons">
+				<a href="/member/qr-code" class="btn">Show QR Code</a>
+				<a href="/member/subscription-plans" class="btn secondary">View Plans</a>
+			</div>
+		</div>
+	</section>
+</MemberLayout>
+
+<style>
+	.welcome {
+		margin-bottom: 2rem;
+	}
+
+	h1 {
+		font-size: 2rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.dashboard-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 2rem;
+	}
+
+	.card {
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 1.5rem;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	h2 {
+		margin-top: 0;
+		margin-bottom: 1.5rem;
+		font-size: 1.3rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+		padding-bottom: 0.5rem;
+	}
+
+	.status-info {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.status-badge {
+		display: inline-block;
+		padding: 0.3rem 0.8rem;
+		border-radius: 20px;
+		font-weight: bold;
+		font-size: 0.9rem;
+		text-transform: uppercase;
+		text-align: center;
+		width: fit-content;
+	}
+
+	.status-badge[data-active="true"] {
+		background-color: #4caf50;
+		color: white;
+	}
+
+	.status-badge[data-active="false"] {
+		background-color: #f44336;
+		color: white;
+	}
+
+	.info-row {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.highlight {
+		color: var(--color-button);
+		font-size: 1.1rem;
+		margin-top: 0.5rem;
+		padding-top: 0.5rem;
+		border-top: 1px dashed rgba(255, 255, 255, 0.1);
+	}
+
+	.action-buttons {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.btn {
+		display: block;
+		text-align: center;
+		background-color: var(--color-button);
+		color: #124e66;
+		padding: 0.8rem;
+		text-decoration: none;
+		border-radius: 6px;
+		font-weight: bold;
+	}
+
+	.btn.secondary {
+		background-color: transparent;
+		color: var(--color-button);
+		border: 1px solid var(--color-button);
+	}
+</style>

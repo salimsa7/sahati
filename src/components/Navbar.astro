@@ -1,0 +1,121 @@
+---
+interface Props {
+	role: 'member' | 'staff' | 'admin';
+}
+
+const { role } = Astro.props;
+
+const navItems = {
+	member: [
+		{ name: 'Dashboard', href: '/member/dashboard' },
+		{ name: 'Subscription Plans', href: '/member/subscription-plans' },
+		{ name: 'QR Code', href: '/member/qr-code' },
+		{ name: 'Profile', href: '/member/profile' },
+	],
+	staff: [
+		{ name: 'Dashboard', href: '/staff/dashboard' },
+		{ name: 'QR Verification', href: '/staff/qr-verify' },
+		{ name: 'Member Search', href: '/staff/member-search' },
+		{ name: 'Renew Subscription', href: '/staff/renew-subscription' },
+	],
+	admin: [
+		{ name: 'Dashboard', href: '/admin/dashboard' },
+		{ name: 'Manage Members', href: '/admin/manage-members' },
+		{ name: 'Manage Staff', href: '/admin/manage-staff' },
+		{ name: 'Subscriptions', href: '/admin/subscriptions' },
+		{ name: 'Logs', href: '/admin/logs' },
+	],
+};
+
+const items = navItems[role];
+---
+
+<nav class="navbar">
+	<div class="nav-logo">
+		<a href="/">
+			<img src="/logo.png" alt="Sahati Gym" />
+		</a>
+	</div>
+	<ul class="nav-links">
+		{items.map(item => (
+			<li><a href={item.href}>{item.name}</a></li>
+		))}
+		<li>
+			<form action="/api/auth/logout" method="POST" id="logout-form">
+				<button type="submit" class="logout-btn">Logout</button>
+			</form>
+		</li>
+	</ul>
+</nav>
+
+<script>
+	const logoutForm = document.getElementById('logout-form') as HTMLFormElement;
+	logoutForm?.addEventListener('submit', () => {
+		const btn = logoutForm.querySelector('button');
+		btn?.classList.add('loading');
+	});
+</script>
+
+<style>
+	.navbar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1rem 2rem;
+		background-color: rgba(255, 255, 255, 0.1);
+		backdrop-filter: blur(5px);
+	}
+
+	.nav-logo {
+		height: 40px;
+		display: flex;
+		align-items: center;
+	}
+
+	.nav-logo a {
+		display: flex;
+		height: 100%;
+	}
+
+	.nav-logo img {
+		height: 100%;
+		width: auto;
+		object-fit: contain;
+		display: block;
+	}
+
+	.nav-links {
+		display: flex;
+		list-style: none;
+		gap: 1.5rem;
+		margin: 0;
+		padding: 0;
+		align-items: center;
+	}
+
+	.nav-links a {
+		text-decoration: none;
+		font-weight: 500;
+		transition: opacity 0.2s;
+	}
+
+	.nav-links a:hover {
+		opacity: 0.7;
+	}
+
+	.logout-btn {
+		background: none;
+		border: 1px solid var(--color-button);
+		color: var(--color-button);
+		padding: 0.4rem 0.8rem;
+		border-radius: 4px;
+		cursor: pointer;
+		font-weight: bold;
+		transition: background-color 0.2s, color 0.2s;
+	}
+
+	.logout-btn:hover {
+		background-color: var(--color-button);
+		color: #124e66;
+	}
+</style>

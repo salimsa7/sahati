@@ -1,11 +1,90 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Sahati Gym">
+	<main class="container">
+		<div class="hero">
+			<div class="brand">
+				<img src="/logoWithText.png" alt="Sahati Gym" class="logo" />
+			</div>
+			<p>Please select your role to continue</p>
+		</div>
+
+		<div class="role-selector">
+			<a href="/member/login" class="btn">Member</a>
+			<a href="/staff/login" class="btn">Gym Staff</a>
+			<a href="/admin/login" class="btn">Admin</a>
+		</div>
+	</main>
 </Layout>
+
+<style>
+	.container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 100vh;
+		text-align: center;
+		padding: 2rem;
+	}
+
+	.hero {
+		margin-bottom: 3rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1.5rem;
+	}
+
+	.brand {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 1rem;
+		width: 100%;
+		max-width: 400px;
+	}
+
+	.logo {
+		width: 100%;
+		height: auto;
+		object-fit: contain;
+	}
+
+	h1 {
+		font-size: 1.5rem;
+		margin-top: 0;
+		opacity: 0.8;
+	}
+
+	p {
+		font-size: 1.2rem;
+		opacity: 0.9;
+	}
+
+	.role-selector {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		width: 100%;
+		max-width: 300px;
+	}
+
+	.btn {
+		display: block;
+		background-color: var(--color-button);
+		color: #124e66; /* Dark text as per instructions */
+		padding: 1rem;
+		text-decoration: none;
+		border-radius: 8px;
+		font-weight: bold;
+		transition: transform 0.2s, opacity 0.2s;
+	}
+
+	.btn:hover {
+		transform: translateY(-2px);
+		opacity: 0.9;
+	}
+</style>

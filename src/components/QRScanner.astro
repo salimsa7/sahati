@@ -1,0 +1,51 @@
+<div id="qr-reader" style="width: 100%; max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden;"></div>
+
+<script>
+	import { Html5QrcodeScanner } from "html5-qrcode";
+
+	function onScanSuccess(decodedText: string, decodedResult: any) {
+		// Dispatch event with the token
+		const event = new CustomEvent('qr-scanned', { detail: { token: decodedText } });
+		window.dispatchEvent(event);
+	}
+
+	function onScanFailure(error: any) {
+		// handle scan failure, usually better to ignore and keep scanning
+	}
+
+	const html5QrcodeScanner = new Html5QrcodeScanner(
+		"qr-reader",
+		{ fps: 10, qrbox: { width: 250, height: 250 } },
+		/* verbose= */ false
+	);
+	html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+</script>
+
+<style>
+	#qr-reader {
+		border: 1px solid rgba(255, 255, 255, 0.1) !important;
+		background-color: rgba(0, 0, 0, 0.2) !important;
+	}
+
+	#qr-reader__dashboard {
+		background-color: transparent !important;
+		color: white !important;
+	}
+
+	#qr-reader__camera_selection {
+		background-color: #124e66 !important;
+		color: white !important;
+		padding: 5px !important;
+		border-radius: 4px !important;
+	}
+
+	button {
+		background-color: var(--color-button) !important;
+		color: #124e66 !important;
+		border: none !important;
+		padding: 8px 15px !important;
+		border-radius: 4px !important;
+		font-weight: bold !important;
+		cursor: pointer !important;
+	}
+</style>

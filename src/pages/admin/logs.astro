@@ -1,0 +1,125 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Access Logs | Sahati Gym">
+	<section class="admin-container">
+		<h1>Access Logs</h1>
+
+		<div class="search-box card">
+			<input type="text" id="log-search" placeholder="Filter by Member ID..." />
+		</div>
+
+		<div class="table-container card">
+			<table>
+				<thead>
+					<tr>
+						<th>Member Name</th>
+						<th>Member ID</th>
+						<th>Timestamp</th>
+						<th>Result</th>
+					</tr>
+				</thead>
+				<tbody id="logs-table-body">
+					<!-- Data loaded via JS -->
+				</tbody>
+			</table>
+		</div>
+	</section>
+</AdminLayout>
+
+<script>
+	let logs: any[] = [];
+	const tableBody = document.getElementById('logs-table-body');
+	const searchInput = document.getElementById('log-search') as HTMLInputElement;
+
+	async function loadLogs(memberId = '') {
+		const url = memberId ? `/api/admin/logs?memberId=${memberId}` : '/api/admin/logs';
+		const res = await fetch(url);
+		logs = await res.json();
+		renderTable();
+	}
+
+	function renderTable() {
+		tableBody!.innerHTML = logs.map(l => `
+			<tr>
+				<td>${l.users?.name || 'N/A'}</td>
+				<td class="id-cell">${l.user_id || 'System'}</td>
+				<td>${new Date(l.scanned_at).toLocaleString()}</td>
+				<td>
+					<span class="result-badge" data-success="${l.result === 'granted'}">
+						${l.result}
+					</span>
+				</td>
+			</tr>
+		`).join('');
+	}
+
+	searchInput?.addEventListener('input', (e) => loadLogs((e.target as HTMLInputElement).value));
+
+	loadLogs();
+</script>
+
+<style>
+	.admin-container {
+		max-width: 1000px;
+		margin: 0 auto;
+	}
+
+	.card {
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 1.5rem;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		margin-bottom: 2rem;
+	}
+
+	#log-search {
+		width: 100%;
+		padding: 0.8rem;
+		background: rgba(0,0,0,0.2);
+		border: 1px solid rgba(255,255,255,0.2);
+		color: white;
+		border-radius: 6px;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	th {
+		text-align: left;
+		padding: 1rem;
+		border-bottom: 2px solid rgba(255,255,255,0.1);
+		opacity: 0.8;
+	}
+
+	td {
+		padding: 1rem;
+		border-bottom: 1px solid rgba(255,255,255,0.05);
+		font-size: 0.9rem;
+	}
+
+	.id-cell {
+		font-family: monospace;
+		opacity: 0.7;
+	}
+
+	.result-badge {
+		padding: 0.2rem 0.6rem;
+		border-radius: 4px;
+		font-weight: bold;
+		font-size: 0.8rem;
+	}
+
+	.result-badge[data-success="true"] {
+		background-color: rgba(76, 175, 80, 0.2);
+		color: #4caf50;
+	}
+
+	.result-badge[data-success="false"] {
+		background-color: rgba(244, 67, 54, 0.2);
+		color: #f44336;
+	}
+</style>

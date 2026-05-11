@@ -1,0 +1,305 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+---
+
+<StaffLayout title="Renew Subscription | Sahati Gym">
+	<section class="renew-container">
+		<h1>Renew Subscription</h1>
+		
+		<div class="search-box card">
+			<h3>1. Select Member</h3>
+			<div class="form-group">
+				<input type="text" id="member-search" placeholder="Search by Name, Email, or Phone..." />
+			</div>
+			<div class="member-list-container">
+				<table class="member-table">
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Email</th>
+							<th>Plan</th>
+							<th>Expiry</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody id="member-list-body">
+						<!-- Loaded via JS -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<div id="renewal-modal" class="modal hidden">
+			<div class="modal-content card">
+				<h2>Renew Subscription</h2>
+				<div id="selected-member-info" class="member-info"></div>
+				
+				<div class="form-group">
+					<label for="plan-select">Select Plan</label>
+					<select id="plan-select">
+						<option value="Lite">Lite</option>
+						<option value="Plus">Plus</option>
+						<option value="Pro">Pro</option>
+						<option value="Elite">Elite</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="end-date">New End Date</label>
+					<input type="date" id="end-date" required />
+				</div>
+				<div class="modal-actions">
+					<button id="cancel-btn" class="btn secondary">Cancel</button>
+					<button id="renew-btn" class="btn primary">Confirm Renewal</button>
+				</div>
+			</div>
+		</div>
+
+		<div id="message" class="message hidden"></div>
+	</section>
+</StaffLayout>
+
+<script>
+	const searchInput = document.getElementById('member-search') as HTMLInputElement;
+	const listBody = document.getElementById('member-list-body');
+	const modal = document.getElementById('renewal-modal');
+	const selectedInfo = document.getElementById('selected-member-info');
+	const cancelBtn = document.getElementById('cancel-btn');
+	const renewBtn = document.getElementById('renew-btn');
+	const messageDiv = document.getElementById('message');
+
+	let members: any[] = [];
+	let selectedMemberId = '';
+
+	async function loadMembers(query = '') {
+		try {
+			const response = await fetch(`/api/staff/search-member?q=${query}`);
+			members = await response.json();
+			renderList();
+		} catch (error) {
+			console.error('Failed to load members', error);
+		}
+	}
+
+	function renderList() {
+		listBody!.innerHTML = members.map(m => {
+			const sub = m.subscriptions?.[0];
+			const expiry = sub ? new Date(sub.end_date).toLocaleDateString() : 'N/A';
+			return `
+				<tr>
+					<td>${m.name}</td>
+					<td>${m.email}</td>
+					<td>${sub?.plan || 'None'}</td>
+					<td>${expiry}</td>
+					<td>
+						<button class="action-link" onclick="window.selectMember('${m.id}')">Select</button>
+					</td>
+				</tr>
+			`;
+		}).join('');
+	}
+
+	(window as any).selectMember = (id: string) => {
+		const member = members.find(m => m.id === id);
+		if (!member) return;
+
+		selectedMemberId = member.id;
+		const sub = member.subscriptions?.[0];
+		
+		selectedInfo!.innerHTML = `
+			<p><strong>Member:</strong> ${member.name}</p>
+			<p><strong>Current Plan:</strong> ${sub?.plan || 'None'}</p>
+			<p><strong>Current Expiry:</strong> ${sub ? new Date(sub.end_date).toLocaleDateString() : 'N/A'}</p>
+		`;
+
+		// Pre-fill plan if exists
+		if (sub?.plan) {
+			(document.getElementById('plan-select') as HTMLSelectElement).value = sub.plan;
+		}
+
+		modal!.classList.remove('hidden');
+	};
+
+	cancelBtn?.addEventListener('click', () => modal!.classList.add('hidden'));
+
+	async function confirmRenewal() {
+		const plan = (document.getElementById('plan-select') as HTMLSelectElement).value;
+		const endDate = (document.getElementById('end-date') as HTMLInputElement).value;
+
+		if (!endDate) {
+			alert('Please select an end date');
+			return;
+		}
+
+		renewBtn?.classList.add('loading');
+
+		try {
+			const response = await fetch('/api/staff/renew-subscription', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ memberId: selectedMemberId, plan, endDate })
+			});
+			const result = await response.json();
+
+			if (result.success) {
+				messageDiv!.textContent = 'Subscription renewed successfully!';
+				messageDiv!.className = 'message success';
+				messageDiv!.classList.remove('hidden');
+				modal!.classList.add('hidden');
+				loadMembers(searchInput.value);
+				
+				setTimeout(() => messageDiv!.classList.add('hidden'), 3000);
+			} else {
+				alert(result.error || 'Renewal failed.');
+			}
+		} catch (error) {
+			console.error('Renewal failed', error);
+		} finally {
+			renewBtn?.classList.remove('loading');
+		}
+	}
+
+	renewBtn?.addEventListener('click', confirmRenewal);
+
+	searchInput?.addEventListener('input', (e) => {
+		loadMembers((e.target as HTMLInputElement).value);
+	});
+
+	// Initial load
+	loadMembers();
+</script>
+
+<style>
+	.renew-container {
+		max-width: 900px;
+		margin: 0 auto;
+	}
+
+	h1 {
+		margin-bottom: 2rem;
+		text-align: center;
+	}
+
+	.card {
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 2rem;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		margin-bottom: 2rem;
+	}
+
+	.member-list-container {
+		margin-top: 1.5rem;
+		overflow-x: auto;
+	}
+
+	.member-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.9rem;
+	}
+
+	.member-table th {
+		text-align: left;
+		padding: 1rem;
+		border-bottom: 2px solid rgba(255,255,255,0.1);
+		opacity: 0.8;
+	}
+
+	.member-table td {
+		padding: 1rem;
+		border-bottom: 1px solid rgba(255,255,255,0.05);
+	}
+
+	.action-link {
+		background: none;
+		border: none;
+		color: var(--color-button);
+		text-decoration: underline;
+		cursor: pointer;
+		font-weight: bold;
+	}
+
+	/* Modal */
+	.modal {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0,0,0,0.8);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+	}
+
+	.modal-content {
+		width: 100%;
+		max-width: 500px;
+	}
+
+	.member-info {
+		background: rgba(255,255,255,0.05);
+		padding: 1rem;
+		border-radius: 8px;
+		margin-bottom: 1.5rem;
+	}
+
+	.member-info p {
+		margin: 0.3rem 0;
+	}
+
+	.modal-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 1rem;
+		margin-top: 2rem;
+	}
+
+	.btn {
+		padding: 0.8rem 1.5rem;
+		border-radius: 6px;
+		font-weight: bold;
+		cursor: pointer;
+		border: none;
+	}
+
+	.btn.primary {
+		background-color: var(--color-button);
+		color: #124e66;
+	}
+
+	.btn.secondary {
+		background-color: transparent;
+		color: var(--color-text);
+		border: 1px solid rgba(255,255,255,0.2);
+	}
+
+	input, select {
+		width: 100%;
+		padding: 0.8rem;
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		background-color: rgba(0, 0, 0, 0.2);
+		color: white;
+	}
+
+	.hidden {
+		display: none;
+	}
+
+	.message {
+		position: fixed;
+		bottom: 2rem;
+		right: 2rem;
+		padding: 1rem 2rem;
+		border-radius: 8px;
+		font-weight: bold;
+		z-index: 1001;
+	}
+
+	.message.success {
+		background-color: #4caf50;
+		color: white;
+	}
+</style>

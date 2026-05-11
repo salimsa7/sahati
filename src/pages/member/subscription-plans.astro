@@ -1,0 +1,62 @@
+---
+import MemberLayout from '../../layouts/MemberLayout.astro';
+import SubscriptionCard from '../../components/SubscriptionCard.astro';
+
+const plans = [
+	{
+		name: 'Lite',
+		price: '$20/mo',
+		features: ['Basic Gym Access', 'Locker Room Access', 'Standard Equipment'],
+		color: '#a8dadc'
+	},
+	{
+		name: 'Plus',
+		price: '$40/mo',
+		features: ['All Lite Features', 'Group Classes', '1 Guest Pass/mo', 'Steam Room'],
+		color: '#457b9d'
+	},
+	{
+		name: 'Pro',
+		price: '$60/mo',
+		features: ['All Plus Features', 'Personal Training (1 session)', 'Unlimited Guest Passes', 'Massage Chairs'],
+		color: '#1d3557'
+	},
+	{
+		name: 'Elite',
+		price: '$100/mo',
+		features: ['All Pro Features', 'Weekly PT Sessions', 'Nutritional Planning', 'Private Locker'],
+		color: '#e63946'
+	}
+];
+---
+
+<MemberLayout title="Subscription Plans | Sahati Gym">
+	<section class="plans-header">
+		<h1>Subscription Plans</h1>
+		<p>Choose the plan that fits your fitness goals. To upgrade or renew, please visit the front desk.</p>
+	</section>
+
+	<div class="plans-grid">
+		{plans.map(plan => (
+			<SubscriptionCard plan={plan} />
+		))}
+	</div>
+</MemberLayout>
+
+<style>
+	.plans-header {
+		text-align: center;
+		margin-bottom: 3rem;
+	}
+
+	h1 {
+		font-size: 2.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.plans-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		gap: 2rem;
+	}
+</style>
