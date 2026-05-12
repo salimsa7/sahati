@@ -33,3 +33,5 @@ GEMINI.md
 .gemini/
 .graphifyignore
 .agents
+# Local Netlify folder
+.netlify
