@@ -62,10 +62,12 @@ export const POST: APIRoute = async ({ request }) => {
 
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
 
+  const user = Array.isArray(subscription.users) ? subscription.users[0] : subscription.users;
+
   return new Response(JSON.stringify({
     success: isActive,
     member: {
-      name: subscription.users?.name,
+      name: user?.name,
       plan: capitalize(subscription.plan),
       expiry: subscription.end_date
     },

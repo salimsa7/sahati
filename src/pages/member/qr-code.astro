@@ -12,15 +12,34 @@ const { data: profile } = await supabase
 	.eq('id', user.id)
 	.single();
 
-const { data: qrData } = await supabase
+const { data: qrData, error: qrFetchError } = await supabase
 	.from('qr_tokens')
 	.select('token')
 	.eq('user_id', user.id)
-	.single();
+	.maybeSingle();
+
+let qrToken = qrData?.token;
+
+// Self-healing: if QR token is missing, generate it now
+if (!qrToken && !qrFetchError) {
+	const newToken = crypto.randomUUID();
+	const { data: created, error: createError } = await supabase
+		.from('qr_tokens')
+		.insert({
+			user_id: user.id,
+			token: newToken
+		})
+		.select('token')
+		.single();
+	
+	if (!createError && created) {
+		qrToken = created.token;
+	}
+}
 
 let qrCodeUrl = '';
-if (qrData?.token) {
-	qrCodeUrl = await QRCode.toDataURL(qrData.token, {
+if (qrToken) {
+	qrCodeUrl = await QRCode.toDataURL(qrToken, {
 		color: {
 			dark: '#124e66',
 			light: '#d3d9d4'

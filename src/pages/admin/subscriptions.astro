@@ -4,47 +4,54 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
 <AdminLayout title="Manage Subscriptions | Sahati Gym">
 	<section class="admin-container">
-		<div class="header-with-action">
-			<h1>Manage Subscriptions</h1>
-			<button id="add-sub-btn" class="btn primary">Add New Subscription</button>
+		<div class="page-header">
+			<div>
+				<h1>Manage Subscriptions</h1>
+				<p>Edit member subscription details. QR code is regenerated on every save.</p>
+			</div>
+			<button id="add-sub-btn" class="btn primary">+ Add Subscription</button>
 		</div>
 
-		<div class="search-box card">
-			<input type="text" id="sub-search" placeholder="Search by Name, Email, or Member ID..." />
+		<div class="card search-card">
+			<div class="search-wrapper">
+				<svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+				<input type="text" id="sub-search" placeholder="Search by member name, email, or ID…" />
+			</div>
 		</div>
 
-		<div class="table-container card">
-			<table>
-				<thead>
-					<tr>
-						<th>Member</th>
-						<th>Plan</th>
-						<th>Status</th>
-						<th>Expiry</th>
-						<th>Actions</th>
-					</tr>
-				</thead>
-				<tbody id="subs-table-body">
-					<!-- Data loaded via JS -->
-				</tbody>
-			</table>
-			<div id="empty-state" class="empty-state hidden">
-				<p>No active/expired subscriptions found.</p>
+		<div class="card table-card">
+			<div class="table-scroll">
+				<table>
+					<thead>
+						<tr>
+							<th>Member</th>
+							<th>Plan</th>
+							<th>Status</th>
+							<th>Start</th>
+							<th>End / Expiry</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody id="subs-table-body"></tbody>
+				</table>
+				<div id="empty-state" class="empty-state hidden">
+					<p>No subscriptions found. Use "Add Subscription" to create one.</p>
+				</div>
 			</div>
 		</div>
 	</section>
 
 	<!-- Member Selection Modal -->
 	<div id="member-select-modal" class="modal hidden">
-		<div class="modal-content card">
-			<h2>Select Member</h2>
+		<div class="modal-content">
+			<h2>Select a Member</h2>
 			<div class="form-group">
-				<input type="text" id="member-search-input" placeholder="Search member by Name, Email, or Phone..." />
+				<input type="text" id="member-search-input" placeholder="Search by name, email, or phone…" />
 			</div>
 			<div class="selection-list-container">
 				<table class="selection-table">
 					<tbody id="member-selection-list">
-						<!-- Loaded via JS -->
+						<tr><td class="empty-row">Type to search for a member.</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -54,36 +61,44 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 		</div>
 	</div>
 
-	<!-- Sub Modal -->
+	<!-- Edit / Add Subscription Modal -->
 	<div id="sub-modal" class="modal hidden">
-		<div class="modal-content card">
+		<div class="modal-content">
 			<h2 id="modal-title">Edit Subscription</h2>
-			<div id="modal-member-info" class="member-info-mini"></div>
+			<div id="modal-member-info" class="member-info-box"></div>
 			<form id="sub-form">
 				<input type="hidden" id="sub-member-id" name="member_id" />
-				<div class="form-group">
-					<label for="sub-status">Status</label>
-					<select id="sub-status" name="status">
-						<option value="Active">Active</option>
-						<option value="Expired">Expired</option>
-					</select>
+				<div class="form-row">
+					<div class="form-group">
+						<label for="sub-status">Status</label>
+						<select id="sub-status" name="status">
+							<option value="Active">Active</option>
+							<option value="Expired">Expired</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label for="sub-plan">Plan</label>
+						<select id="sub-plan" name="plan">
+							<option value="Lite">Lite – 1 Month</option>
+							<option value="Plus">Plus – 3 Months</option>
+							<option value="Pro">Pro – 6 Months</option>
+							<option value="Elite">Elite – 1 Year</option>
+						</select>
+					</div>
 				</div>
-				<div class="form-group">
-					<label for="sub-plan">Plan</label>
-					<select id="sub-plan" name="plan">
-						<option value="Lite">Lite</option>
-						<option value="Plus">Plus</option>
-						<option value="Pro">Pro</option>
-						<option value="Elite">Elite</option>
-					</select>
+				<div class="form-row">
+					<div class="form-group">
+						<label for="sub-start">Start Date</label>
+						<input type="date" id="sub-start" name="start_date" required />
+					</div>
+					<div class="form-group">
+						<label for="sub-end">End Date</label>
+						<input type="date" id="sub-end" name="end_date" required />
+					</div>
 				</div>
-				<div class="form-group">
-					<label for="sub-start">Start Date</label>
-					<input type="date" id="sub-start" name="start_date" required />
-				</div>
-				<div class="form-group">
-					<label for="sub-end">End Date</label>
-					<input type="date" id="sub-end" name="end_date" required />
+				<div class="qr-notice">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+					Saving will regenerate the member's QR code.
 				</div>
 				<div class="modal-actions">
 					<button type="button" id="cancel-sub-modal" class="btn secondary">Cancel</button>
@@ -92,64 +107,95 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 			</form>
 		</div>
 	</div>
+
+	<div id="toast" class="toast hidden"></div>
 </AdminLayout>
 
 <script>
 	let subscriptions: any[] = [];
 	let members: any[] = [];
-	
-	const tableBody = document.getElementById('subs-table-body');
-	const emptyState = document.getElementById('empty-state');
-	const searchInput = document.getElementById('sub-search') as HTMLInputElement;
-	
-	const subModal = document.getElementById('sub-modal');
-	const subModalTitle = document.getElementById('modal-title');
-	const subForm = document.getElementById('sub-form') as HTMLFormElement;
-	const cancelSubBtn = document.getElementById('cancel-sub-modal');
-	const modalInfo = document.getElementById('modal-member-info');
 
-	const addSubBtn = document.getElementById('add-sub-btn');
-	const selectModal = document.getElementById('member-select-modal');
+	const tableBody      = document.getElementById('subs-table-body');
+	const emptyState     = document.getElementById('empty-state');
+	const searchInput    = document.getElementById('sub-search') as HTMLInputElement;
+	const subModal       = document.getElementById('sub-modal');
+	const subModalTitle  = document.getElementById('modal-title');
+	const subForm        = document.getElementById('sub-form') as HTMLFormElement;
+	const cancelSubBtn   = document.getElementById('cancel-sub-modal');
+	const modalInfo      = document.getElementById('modal-member-info');
+	const addSubBtn      = document.getElementById('add-sub-btn');
+	const selectModal    = document.getElementById('member-select-modal');
 	const closeSelectBtn = document.getElementById('close-select-modal');
-	const memberSearchInput = document.getElementById('member-search-input') as HTMLInputElement;
-	const selectionList = document.getElementById('member-selection-list');
+	const memberSearchIn = document.getElementById('member-search-input') as HTMLInputElement;
+	const selectionList  = document.getElementById('member-selection-list');
+	const toast          = document.getElementById('toast');
+
+	function showToast(msg: string, type: 'success' | 'error' = 'success') {
+		toast!.textContent = msg;
+		toast!.className = `toast ${type}`;
+		setTimeout(() => { toast!.className = 'toast hidden'; }, 3500);
+	}
+
+	function formatDate(date: string | Date) {
+		if (!date) return '—';
+		return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+	}
+
+	function toInputDate(dateStr: string) {
+		if (!dateStr) return '';
+		return dateStr.split('T')[0];
+	}
+
+	function calculateExpiryDate(plan: string) {
+		const d = new Date();
+		const p = plan.toLowerCase();
+		if (p === 'lite')       d.setMonth(d.getMonth() + 1);
+		else if (p === 'plus')  d.setMonth(d.getMonth() + 3);
+		else if (p === 'pro')   d.setMonth(d.getMonth() + 6);
+		else if (p === 'elite') d.setFullYear(d.getFullYear() + 1);
+		else                    d.setMonth(d.getMonth() + 1);
+		return d.toISOString().split('T')[0];
+	}
 
 	async function loadSubscriptions(query = '') {
-		const url = query ? `/api/admin/subscriptions?q=${query}` : '/api/admin/subscriptions';
+		const url = query ? `/api/admin/subscriptions?q=${encodeURIComponent(query)}` : '/api/admin/subscriptions';
 		const res = await fetch(url);
 		subscriptions = await res.json();
 		renderTable();
 	}
 
 	function renderTable() {
-		if (subscriptions.length === 0) {
+		if (!subscriptions.length) {
 			tableBody!.innerHTML = '';
 			emptyState!.classList.remove('hidden');
 			return;
 		}
-
 		emptyState!.classList.add('hidden');
-		tableBody!.innerHTML = subscriptions.map(s => `
-			<tr>
-				<td>
-					<div class="member-cell">
-						<strong>${s.users?.name || 'Unknown'}</strong>
-						<span class="member-email">${s.users?.email || ''}</span>
-						<code class="member-id-mini">${s.member_id}</code>
-					</div>
-				</td>
-				<td>${s.plan}</td>
-				<td><span class="status-badge" data-status="${s.status}">${s.status}</span></td>
-				<td>${new Date(s.end_date).toLocaleDateString()}</td>
-				<td>
-					<button class="edit-btn action-link-btn" data-id="${s.member_id}">Edit</button>
-				</td>
-			</tr>
-		`).join('');
+		tableBody!.innerHTML = subscriptions.map(s => {
+			const status = s.status || '';
+			const badgeClass = status.toLowerCase() === 'active' ? 'badge-success' : 'badge-danger';
+			return `
+				<tr>
+					<td>
+						<div class="member-cell">
+							<strong>${s.users?.name || 'Unknown'}</strong>
+							<span class="sub-text">${s.users?.email || ''}</span>
+							<code class="id-mini">${s.member_id}</code>
+						</div>
+					</td>
+					<td><span class="plan-label">${s.plan}</span></td>
+					<td><span class="badge ${badgeClass}">${status}</span></td>
+					<td>${formatDate(s.start_date)}</td>
+					<td>${formatDate(s.end_date)}</td>
+					<td>
+						<button class="btn-edit edit-btn" data-id="${s.member_id}">Edit</button>
+					</td>
+				</tr>
+			`;
+		}).join('');
 
-		// Attach event listeners for edit buttons
 		tableBody!.querySelectorAll('.edit-btn').forEach(btn => {
-			btn.addEventListener('click', (e) => {
+			btn.addEventListener('click', e => {
 				const id = (e.currentTarget as HTMLElement).dataset.id;
 				if (id) openEditModal(id);
 			});
@@ -159,56 +205,58 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 	function openEditModal(memberId: string) {
 		const s = subscriptions.find(sub => sub.member_id === memberId);
 		if (!s) return;
-
 		subModalTitle!.textContent = 'Edit Subscription';
 		modalInfo!.innerHTML = `
-			<p><strong>${s.users?.name || 'Unknown'}</strong></p>
-			<p class="text-small">${s.users?.email || ''}</p>
+			<div class="info-row"><span class="info-label">Member</span><span>${s.users?.name || 'Unknown'}</span></div>
+			<div class="info-row"><span class="info-label">Email</span><span class="text-muted">${s.users?.email || ''}</span></div>
 		`;
-
-		const formatDate = (dateStr: string) => {
-			if (!dateStr) return '';
-			return dateStr.split('T')[0];
-		};
-
 		(document.getElementById('sub-member-id') as HTMLInputElement).value = s.member_id;
-		(document.getElementById('sub-status') as HTMLSelectElement).value = s.status;
-		(document.getElementById('sub-plan') as HTMLSelectElement).value = s.plan;
-		(document.getElementById('sub-start') as HTMLInputElement).value = formatDate(s.start_date);
-		(document.getElementById('sub-end') as HTMLInputElement).value = formatDate(s.end_date);
+		(document.getElementById('sub-status')    as HTMLSelectElement).value = s.status;
+		(document.getElementById('sub-plan')      as HTMLSelectElement).value = s.plan;
+		(document.getElementById('sub-start')     as HTMLInputElement).value  = toInputDate(s.start_date);
+		(document.getElementById('sub-end')       as HTMLInputElement).value  = toInputDate(s.end_date);
 		subModal!.classList.remove('hidden');
 	}
 
-	// For legacy support if needed, but we prefer event listeners
-	(window as any).editSub = openEditModal;
+	// Auto-update end date when plan changes
+	const subPlanSelect = document.getElementById('sub-plan') as HTMLSelectElement;
+	const subEndInput   = document.getElementById('sub-end')  as HTMLInputElement;
+	subPlanSelect?.addEventListener('change', () => {
+		subEndInput.value = calculateExpiryDate(subPlanSelect.value);
+	});
 
-	// Add New Subscription Flow
+	// Add new flow
 	addSubBtn?.addEventListener('click', () => {
-		memberSearchInput.value = '';
-		selectionList!.innerHTML = '<p class="info-text">Search for a member to add a subscription.</p>';
+		memberSearchIn.value = '';
+		selectionList!.innerHTML = '<tr><td class="empty-row">Type to search for a member.</td></tr>';
 		selectModal!.classList.remove('hidden');
 	});
 
 	closeSelectBtn?.addEventListener('click', () => selectModal!.classList.add('hidden'));
 
-	async function searchMembers(q: string) {
-		if (!q) return;
-		const res = await fetch(`/api/admin/members?q=${q}`);
+	async function searchMembersForSub(q: string) {
+		if (!q.trim()) {
+			selectionList!.innerHTML = '<tr><td class="empty-row">Type to search for a member.</td></tr>';
+			return;
+		}
+		const res = await fetch(`/api/admin/members?q=${encodeURIComponent(q)}`);
 		members = await res.json();
-		
+		if (!members.length) {
+			selectionList!.innerHTML = '<tr><td class="empty-row">No members found.</td></tr>';
+			return;
+		}
 		selectionList!.innerHTML = members.map(m => `
 			<tr class="selectable-row" data-id="${m.id}">
 				<td>
 					<strong>${m.name}</strong><br/>
-					<small>${m.email}</small>
+					<small class="text-muted">${m.email}</small>
 				</td>
-				<td class="text-right">Select</td>
+				<td class="text-action">Select →</td>
 			</tr>
 		`).join('');
 
-		// Attach event listeners for selection
 		selectionList!.querySelectorAll('.selectable-row').forEach(row => {
-			row.addEventListener('click', (e) => {
+			row.addEventListener('click', e => {
 				const id = (e.currentTarget as HTMLElement).dataset.id;
 				if (id) handleSelectMemberForSub(id);
 			});
@@ -216,56 +264,45 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 	}
 
 	function handleSelectMemberForSub(id: string) {
-		const m = members.find(member => member.id === id);
+		const m = members.find(x => x.id === id);
 		if (!m) return;
-
 		selectModal!.classList.add('hidden');
-		
 		subModalTitle!.textContent = 'Add New Subscription';
 		modalInfo!.innerHTML = `
-			<p><strong>${m.name}</strong></p>
-			<p class="text-small">${m.email}</p>
+			<div class="info-row"><span class="info-label">Member</span><span>${m.name}</span></div>
+			<div class="info-row"><span class="info-label">Email</span><span class="text-muted">${m.email}</span></div>
 		`;
-
 		(document.getElementById('sub-member-id') as HTMLInputElement).value = m.id;
-		(document.getElementById('sub-status') as HTMLSelectElement).value = 'Active';
-		(document.getElementById('sub-plan') as HTMLSelectElement).value = 'Lite';
-		(document.getElementById('sub-start') as HTMLInputElement).value = new Date().toISOString().split('T')[0];
-		
-		const nextMonth = new Date();
-		nextMonth.setMonth(nextMonth.getMonth() + 1);
-		(document.getElementById('sub-end') as HTMLInputElement).value = nextMonth.toISOString().split('T')[0];
-		
+		(document.getElementById('sub-status')    as HTMLSelectElement).value = 'Active';
+		(document.getElementById('sub-plan')      as HTMLSelectElement).value = 'Lite';
+		(document.getElementById('sub-start')     as HTMLInputElement).value  = new Date().toISOString().split('T')[0];
+		(document.getElementById('sub-end')       as HTMLInputElement).value  = calculateExpiryDate('lite');
 		subModal!.classList.remove('hidden');
 	}
 
-	// Legacy support
-	(window as any).selectMemberForSub = handleSelectMemberForSub;
+	let memberSearchDebounce: ReturnType<typeof setTimeout>;
+	memberSearchIn?.addEventListener('input', e => {
+		clearTimeout(memberSearchDebounce);
+		memberSearchDebounce = setTimeout(() => searchMembersForSub((e.target as HTMLInputElement).value), 300);
+	});
 
-	memberSearchInput?.addEventListener('input', (e) => searchMembers((e.target as HTMLInputElement).value));
-
-	// Form Submission
-	subForm.addEventListener('submit', async (e) => {
+	subForm.addEventListener('submit', async e => {
 		e.preventDefault();
-		const formData = new FormData(subForm);
-		const data = Object.fromEntries(formData.entries());
+		const data = Object.fromEntries(new FormData(subForm).entries());
 		const submitBtn = subForm.querySelector('button[type="submit"]');
-
 		submitBtn?.classList.add('loading');
-
 		try {
 			const res = await fetch('/api/admin/subscriptions', {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(data)
 			});
-
 			if (res.ok) {
 				subModal!.classList.add('hidden');
+				showToast('✓ Subscription saved and QR code regenerated!', 'success');
 				loadSubscriptions(searchInput.value);
 			} else {
-				const errorText = await res.text();
-				alert('Operation failed: ' + errorText);
+				showToast('Save failed: ' + await res.text(), 'error');
 			}
 		} finally {
 			submitBtn?.classList.remove('loading');
@@ -273,214 +310,187 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 	});
 
 	cancelSubBtn?.addEventListener('click', () => subModal!.classList.add('hidden'));
-	searchInput?.addEventListener('input', (e) => loadSubscriptions((e.target as HTMLInputElement).value));
+
+	let searchDebounce: ReturnType<typeof setTimeout>;
+	searchInput?.addEventListener('input', e => {
+		clearTimeout(searchDebounce);
+		searchDebounce = setTimeout(() => loadSubscriptions((e.target as HTMLInputElement).value), 300);
+	});
 
 	loadSubscriptions();
 </script>
 
 <style>
 	.admin-container {
-		max-width: 1000px;
+		max-width: 1040px;
 		margin: 0 auto;
 	}
 
-	.header-with-action {
+	.page-header {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 2rem;
+		align-items: flex-start;
+		margin-bottom: 1.75rem;
+		gap: 1rem;
 	}
 
-	h1 { margin: 0; }
+	.page-header h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+	.page-header p  { color: var(--color-text-muted); margin: 0; font-size: 0.88rem; }
 
-	.card {
-		background-color: rgba(255, 255, 255, 0.05);
-		padding: 1.5rem;
-		border-radius: 12px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		margin-bottom: 2rem;
+	/* Search */
+	.search-card { padding: 1.1rem 1.4rem; }
+
+	.search-wrapper { position: relative; }
+
+	.search-icon {
+		position: absolute;
+		left: 1rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--color-text-subtle);
+		pointer-events: none;
 	}
 
-	#sub-search, #member-search-input {
-		width: 100%;
-		padding: 0.8rem;
-		background: rgba(0,0,0,0.2);
-		border: 1px solid rgba(255,255,255,0.2);
-		color: white;
-		border-radius: 6px;
-	}
+	.search-wrapper input { padding-left: 2.75rem; }
 
-	table {
-		width: 100%;
-		border-collapse: collapse;
-	}
+	/* Table */
+	.table-card  { padding: 0; overflow: hidden; }
+	.table-scroll { overflow-x: auto; }
 
-	th {
-		text-align: left;
-		padding: 1rem;
-		border-bottom: 2px solid rgba(255,255,255,0.1);
-		opacity: 0.8;
-	}
-
-	td {
-		padding: 1rem;
-		border-bottom: 1px solid rgba(255,255,255,0.05);
-	}
-
-	.member-cell {
-		display: flex;
-		flex-direction: column;
-		gap: 0.2rem;
-	}
-
-	.member-email {
-		font-size: 0.8rem;
-		opacity: 0.7;
-	}
-
-	.member-id-mini {
-		font-size: 0.7rem;
-		opacity: 0.5;
+	.member-cell { display: flex; flex-direction: column; gap: 0.15rem; }
+	.sub-text { font-size: 0.8rem; color: var(--color-text-muted); }
+	.id-mini {
+		font-size: 0.68rem;
+		color: var(--color-text-subtle);
 		font-family: monospace;
+		letter-spacing: 0.02em;
 	}
 
-	.status-badge {
-		padding: 0.2rem 0.6rem;
-		border-radius: 20px;
+	.plan-label {
+		font-weight: 600;
+		font-size: 0.88rem;
+	}
+
+	.btn-edit {
+		padding: 0.38rem 0.9rem;
+		border-radius: var(--radius-sm);
 		font-size: 0.8rem;
-		font-weight: bold;
-	}
-
-	.status-badge[data-status="Active"] {
-		background-color: #4caf50;
-		color: white;
-	}
-
-	.status-badge[data-status="Expired"] {
-		background-color: #f44336;
-		color: white;
-	}
-
-	.btn {
-		padding: 0.6rem 1.2rem;
-		border-radius: 6px;
-		font-weight: bold;
+		font-weight: 600;
 		cursor: pointer;
 		border: none;
+		background: rgba(69,123,157,0.25);
+		color: #82c2e0;
+		border: 1px solid rgba(69,123,157,0.4);
+		transition: background var(--transition);
 	}
-
-	.btn.primary {
-		background-color: var(--color-button);
-		color: #124e66;
-	}
-
-	.btn.secondary {
-		background-color: transparent;
-		color: var(--color-text);
-		border: 1px solid rgba(255,255,255,0.2);
-	}
-
-	.edit-btn {
-		background-color: #457b9d;
-		color: white;
-		padding: 0.4rem 0.8rem;
-		border-radius: 4px;
-		font-size: 0.8rem;
-		cursor: pointer;
-		border: none;
-	}
+	.btn-edit:hover { background: rgba(69,123,157,0.4); }
 
 	.empty-state {
 		text-align: center;
-		padding: 3rem;
-		opacity: 0.6;
+		padding: 3rem 2rem;
+		color: var(--color-text-subtle);
 	}
 
-	/* Selection List */
-	.selection-list-container {
-		max-height: 300px;
-		overflow-y: auto;
-		margin-top: 1rem;
+	.empty-row {
+		text-align: center;
+		padding: 2rem !important;
+		color: var(--color-text-subtle);
 	}
 
-	.selectable-row {
-		cursor: pointer;
-		transition: background 0.2s;
-	}
-
-	.selectable-row:hover {
-		background: rgba(255,255,255,0.05);
-	}
-
-	.text-right { text-align: right; color: var(--color-button); font-weight: bold; }
-	.info-text { text-align: center; padding: 1rem; opacity: 0.7; }
-
-	/* Modal */
-	.modal {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: rgba(0,0,0,0.8);
+	/* Modal member info */
+	.member-info-box {
+		background: rgba(0,0,0,0.18);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		padding: 0.9rem 1.1rem;
+		margin-bottom: 1.4rem;
 		display: flex;
-		justify-content: center;
+		flex-direction: column;
+		gap: 0.45rem;
+	}
+
+	.info-row {
+		display: flex;
+		justify-content: space-between;
 		align-items: center;
-		z-index: 1000;
+		font-size: 0.88rem;
 	}
 
-	.modal.hidden {
-		display: none;
+	.info-label {
+		font-size: 0.77rem;
+		font-weight: 700;
+		color: var(--color-text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
-	.modal-content {
-		width: 100%;
-		max-width: 500px;
-	}
+	.text-muted { color: var(--color-text-muted); font-size: 0.85rem; }
 
-	.member-info-mini {
-		background: rgba(255,255,255,0.05);
-		padding: 1rem;
-		border-radius: 8px;
-		margin-bottom: 1.5rem;
-	}
-
-	.member-info-mini p {
-		margin: 0;
-	}
-
-	.text-small {
-		font-size: 0.85rem;
-		opacity: 0.8;
-	}
-
-	.form-group {
-		margin-bottom: 1rem;
-	}
-
-	label {
-		display: block;
-		margin-bottom: 0.3rem;
-		font-size: 0.9rem;
-	}
-
-	input, select {
-		width: 100%;
-		padding: 0.7rem;
-		border-radius: 4px;
-		border: 1px solid rgba(255,255,255,0.2);
-		background: rgba(0,0,0,0.2);
-		color: white;
-	}
-
-	.modal-actions {
-		display: flex;
-		justify-content: flex-end;
+	/* Side-by-side form rows */
+	.form-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
-		margin-top: 2rem;
 	}
 
-	.hidden {
-		display: none;
+	/* QR notice */
+	.qr-notice {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.78rem;
+		color: var(--color-text-muted);
+		margin: 0.5rem 0 0.25rem;
+		padding: 0.6rem 0.9rem;
+		background: rgba(69,123,157,0.12);
+		border-radius: var(--radius-sm);
+		border: 1px solid rgba(69,123,157,0.25);
+	}
+
+	/* Selection modal */
+	.selection-list-container {
+		max-height: 280px;
+		overflow-y: auto;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-border);
+		margin-top: 0.5rem;
+	}
+
+	.selectable-row { cursor: pointer; transition: background var(--transition); }
+	.selectable-row:hover td { background: rgba(255,255,255,0.06); }
+
+	.text-action {
+		text-align: right;
+		font-size: 0.82rem;
+		font-weight: 600;
+		color: var(--color-button);
+		white-space: nowrap;
+	}
+
+	/* Toast */
+	.toast {
+		position: fixed;
+		bottom: 2rem;
+		right: 2rem;
+		padding: 0.85rem 1.6rem;
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		font-size: 0.88rem;
+		z-index: 2000;
+		box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+		animation: slideUp 0.22s ease;
+	}
+	.toast.success { background: #2e7d32; color: #fff; }
+	.toast.error   { background: #c62828; color: #fff; }
+	.toast.hidden  { display: none !important; }
+
+	@keyframes slideUp {
+		from { opacity: 0; transform: translateY(10px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+
+	@media (max-width: 640px) {
+		.page-header { flex-direction: column; }
+		.form-row    { grid-template-columns: 1fr; }
 	}
 </style>

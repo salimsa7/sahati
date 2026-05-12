@@ -51,5 +51,16 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: resultError.message }), { status: 500 });
   }
 
+  // Regenerate QR token so old QR becomes invalid
+  await supabaseAdmin.from('qr_tokens').delete().eq('user_id', memberId);
+  const { error: qrError } = await supabaseAdmin.from('qr_tokens').insert({
+    user_id: memberId,
+    token: crypto.randomUUID()
+  });
+
+  if (qrError) {
+    return new Response(JSON.stringify({ error: 'Subscription renewed but QR regeneration failed: ' + qrError.message }), { status: 500 });
+  }
+
   return new Response(JSON.stringify({ success: true }), { status: 200 });
 };

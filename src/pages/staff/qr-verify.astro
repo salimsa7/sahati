@@ -29,7 +29,7 @@ import QRScanner from '../../components/QRScanner.astro';
 				<div id="result-icon" class="result-icon"></div>
 				<h2 id="result-title"></h2>
 				<div id="result-details" class="result-details"></div>
-				<button id="close-result" class="btn">Dismiss</button>
+				<button id="close-result" class="dismiss-btn">Dismiss</button>
 			</div>
 		</div>
 	</section>
@@ -55,7 +55,12 @@ import QRScanner from '../../components/QRScanner.astro';
 		});
 	});
 
+	let isVerifying = false;
+
 	async function verifyToken(token: string) {
+		if (isVerifying) return;
+		isVerifying = true;
+
 		try {
 			const response = await fetch('/api/staff/verify-qr', {
 				method: 'POST',
@@ -66,6 +71,8 @@ import QRScanner from '../../components/QRScanner.astro';
 			showResult(result);
 		} catch (error) {
 			console.error('Verification failed', error);
+		} finally {
+			isVerifying = false;
 		}
 	}
 
@@ -117,129 +124,156 @@ import QRScanner from '../../components/QRScanner.astro';
 
 <style>
 	.verify-container {
-		max-width: 600px;
+		max-width: 640px;
 		margin: 0 auto;
 		text-align: center;
 	}
 
 	h1 {
+		font-size: 1.75rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.page-sub {
+		color: var(--color-text-muted);
+		font-size: 0.88rem;
 		margin-bottom: 2rem;
 	}
 
+	/* Tab switcher */
 	.tabs {
-		display: flex;
-		justify-content: center;
-		gap: 1rem;
+		display: inline-flex;
+		background: rgba(0,0,0,0.2);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		padding: 0.28rem;
+		gap: 0.25rem;
 		margin-bottom: 2rem;
 	}
 
 	.tab-btn {
 		background: none;
-		border: 1px solid var(--color-button);
-		color: var(--color-button);
-		padding: 0.6rem 1.2rem;
-		border-radius: 6px;
+		border: none;
+		color: var(--color-text-muted);
+		padding: 0.5rem 1.25rem;
+		border-radius: 8px;
 		cursor: pointer;
-		font-weight: bold;
+		font-size: 0.88rem;
+		font-weight: 600;
+		font-family: inherit;
+		transition: background var(--transition), color var(--transition);
 	}
 
 	.tab-btn.active {
-		background-color: var(--color-button);
-		color: #124e66;
+		background: var(--color-button);
+		color: var(--color-button-text);
 	}
 
-	.tab-content {
-		display: none;
-	}
+	.tab-content { display: none; }
+	.tab-content.active { display: block; }
 
-	.tab-content.active {
-		display: block;
-	}
-
+	/* Manual form */
 	.manual-form {
-		background-color: rgba(255, 255, 255, 0.05);
-		padding: 2rem;
-		border-radius: 12px;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		padding: 1.75rem 2rem;
+		border-radius: var(--radius-lg);
 		text-align: left;
+		box-shadow: var(--shadow-card);
 	}
 
-	label {
-		display: block;
-		margin-bottom: 0.5rem;
-		font-weight: 500;
+	.manual-form input {
+		margin-bottom: 1.25rem;
 	}
 
-	input {
-		width: 100%;
-		padding: 0.8rem;
-		border-radius: 6px;
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		background-color: rgba(0, 0, 0, 0.2);
-		color: white;
-		margin-bottom: 1.5rem;
-	}
-
-	.btn {
-		width: 100%;
-		padding: 0.8rem;
-		background-color: var(--color-button);
-		color: #124e66;
-		border: none;
-		border-radius: 6px;
-		font-weight: bold;
-		cursor: pointer;
-	}
-
-	/* Result Overlay */
+	/* Result overlay */
 	.result-overlay {
 		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.8);
+		inset: 0;
+		background: rgba(5, 20, 28, 0.82);
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		z-index: 1000;
+		padding: 1.5rem;
+		animation: fadeIn 0.2s ease;
 	}
 
-	.result-overlay.hidden {
-		display: none;
-	}
+	.result-overlay.hidden { display: none; }
 
 	.result-card {
-		background-color: #1a1a1a;
-		padding: 3rem;
-		border-radius: 20px;
-		max-width: 400px;
-		width: 90%;
+		background: linear-gradient(145deg, #175f7b, #0f4a63);
+		padding: 2.5rem 2rem;
+		border-radius: var(--radius-lg);
+		max-width: 380px;
+		width: 100%;
 		text-align: center;
-		border: 4px solid transparent;
+		border: 2px solid transparent;
+		box-shadow: var(--shadow-modal);
+		transition: border-color 0.2s;
 	}
 
 	.result-card.success {
-		border-color: #4caf50;
+		border-color: rgba(76,175,80,0.6);
+		box-shadow: 0 0 40px rgba(76,175,80,0.15), var(--shadow-modal);
 	}
 
 	.result-card.error {
-		border-color: #f44336;
+		border-color: rgba(230,57,70,0.6);
+		box-shadow: 0 0 40px rgba(230,57,70,0.15), var(--shadow-modal);
 	}
 
 	.result-icon {
-		font-size: 4rem;
+		font-size: 3.5rem;
+		margin-bottom: 0.75rem;
+		display: block;
+	}
+
+	.result-card h2 {
+		font-size: 1.4rem;
 		margin-bottom: 1rem;
 	}
 
+	.result-card.success h2 { color: #81c784; }
+	.result-card.error   h2 { color: #ef9a9a; }
+
 	.result-details {
-		margin: 1.5rem 0;
+		margin: 1.25rem 0;
 		text-align: left;
-		background-color: rgba(255, 255, 255, 0.05);
-		padding: 1rem;
-		border-radius: 8px;
+		background: rgba(0,0,0,0.18);
+		border: 1px solid var(--color-border);
+		padding: 0.9rem 1.1rem;
+		border-radius: var(--radius-md);
 	}
 
 	.result-details p {
-		margin: 0.5rem 0;
+		margin: 0.4rem 0;
+		font-size: 0.9rem;
+		color: var(--color-text-muted);
+	}
+
+	.result-details strong { color: var(--color-text); }
+
+	.dismiss-btn {
+		width: 100%;
+		padding: 0.72rem;
+		background: rgba(255,255,255,0.1);
+		color: #fff;
+		border: 1px solid rgba(255,255,255,0.15);
+		border-radius: var(--radius-sm);
+		font-weight: 600;
+		font-size: 0.9rem;
+		font-family: inherit;
+		cursor: pointer;
+		margin-top: 0.25rem;
+		transition: background var(--transition);
+	}
+	.dismiss-btn:hover { background: rgba(255,255,255,0.16); }
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to   { opacity: 1; }
 	}
 </style>

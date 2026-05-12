@@ -22,9 +22,9 @@ import Layout from '../../layouts/Layout.astro';
 					<input type="password" id="password" name="password" required />
 				</div>
 
-				<div id="error-message" class="error-message hidden"></div>
+			<div id="error-message" class="error-message hidden"></div>
 
-				<button type="submit" class="btn">Login</button>
+				<button type="submit" class="btn-login">Sign In</button>
 			</form>
 
 			<div class="links">
@@ -78,99 +78,112 @@ import Layout from '../../layouts/Layout.astro';
 		justify-content: center;
 		align-items: center;
 		min-height: 100vh;
-		padding: 1rem;
+		padding: 1.5rem;
+		background: radial-gradient(ellipse at top, rgba(18,78,102,0.6) 0%, transparent 70%), var(--color-bg);
 	}
 
 	.login-box {
-		background-color: rgba(255, 255, 255, 0.05);
-		padding: 2.5rem;
-		border-radius: 12px;
+		background: linear-gradient(145deg, #16607e, #0f4d64);
+		padding: 2.5rem 2.75rem;
+		border-radius: 18px;
 		width: 100%;
-		max-width: 400px;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+		max-width: 420px;
+		border: 1px solid rgba(255,255,255,0.12);
+		box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
 	}
 
 	.logo-container {
 		text-align: center;
-		margin-bottom: 2rem;
+		margin-bottom: 1.75rem;
 	}
 
 	.login-logo {
 		width: 100%;
-		max-width: 200px;
+		max-width: 180px;
 		height: auto;
 		object-fit: contain;
 	}
 
 	h1 {
-		margin-top: 0;
-		margin-bottom: 2rem;
+		margin: 0 0 1.75rem;
 		text-align: center;
-		font-size: 1.8rem;
-	}
-
-	.form-group {
-		margin-bottom: 1.5rem;
-	}
-
-	label {
-		display: block;
-		margin-bottom: 0.5rem;
-		font-weight: 500;
-	}
-
-	input {
-		width: 100%;
-		padding: 0.8rem;
-		border-radius: 6px;
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		background-color: rgba(0, 0, 0, 0.2);
-		color: white;
-		font-size: 1rem;
+		font-size: 1.55rem;
+		font-weight: 700;
 	}
 
 	.error-message {
-		background-color: rgba(244, 67, 54, 0.1);
-		color: #f44336;
-		padding: 0.8rem;
-		border-radius: 6px;
-		margin-bottom: 1rem;
-		font-size: 0.9rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: rgba(230,57,70,0.12);
+		color: #ef9a9a;
+		border: 1px solid rgba(230,57,70,0.28);
+		padding: 0.75rem 1rem;
+		border-radius: var(--radius-sm);
+		margin-bottom: 1.1rem;
+		font-size: 0.88rem;
 		text-align: center;
+		justify-content: center;
 	}
 
-	.hidden {
-		display: none;
-	}
-
-	.btn {
+	.btn-login {
 		width: 100%;
 		padding: 0.8rem;
-		background-color: var(--color-button);
-		color: #124e66;
+		background: var(--color-button);
+		color: var(--color-button-text);
 		border: none;
-		border-radius: 6px;
-		font-weight: bold;
-		font-size: 1rem;
+		border-radius: var(--radius-sm);
+		font-weight: 700;
+		font-size: 0.95rem;
+		font-family: inherit;
 		cursor: pointer;
-		margin-top: 1rem;
+		margin-top: 0.5rem;
+		transition: opacity var(--transition), transform var(--transition);
+		position: relative;
+	}
+
+	.btn-login:hover { opacity: 0.88; transform: translateY(-1px); }
+
+	/* Reuse global loading spinner for login btn */
+	.btn-login.loading { color: transparent !important; pointer-events: none; }
+	.btn-login.loading::after {
+		content: "";
+		position: absolute;
+		width: 1.1rem; height: 1.1rem;
+		top: 50%; left: 50%;
+		margin: -0.55rem 0 0 -0.55rem;
+		border: 2px solid rgba(0,0,0,0.15);
+		border-top-color: #0d3a4d;
+		border-radius: 50%;
+		animation: spin 0.6s linear infinite;
 	}
 
 	.links {
 		display: flex;
 		justify-content: space-between;
-		margin-top: 1.5rem;
-		font-size: 0.9rem;
+		margin-top: 1.4rem;
+		font-size: 0.85rem;
 	}
 
+	.links a {
+		color: rgba(211,217,212,0.85);
+		text-decoration: none;
+		transition: color var(--transition);
+	}
+	.links a:hover { color: #fff; }
+
 	.back-link {
-		margin-top: 2rem;
+		margin-top: 1.75rem;
 		text-align: center;
-		font-size: 0.9rem;
-		opacity: 0.8;
+		font-size: 0.85rem;
 	}
 
 	.back-link a {
+		color: rgba(255,255,255,0.5);
 		text-decoration: none;
+		transition: color var(--transition);
 	}
+	.back-link a:hover { color: rgba(255,255,255,0.85); }
+
+	@keyframes spin { to { transform: rotate(360deg); } }
 </style>

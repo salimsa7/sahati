@@ -43,50 +43,63 @@ const staffName = staff?.name || 'Staff Member';
 
 <style>
 	.welcome {
-		margin-bottom: 3rem;
+		margin-bottom: 2.5rem;
+		padding-bottom: 1.75rem;
+		border-bottom: 1px solid rgba(255,255,255,0.08);
 	}
 
 	h1 {
-		font-size: 2.5rem;
-		margin-bottom: 0.5rem;
+		font-size: 2rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.welcome p {
+		color: rgba(255,255,255,0.6);
+		font-size: 0.95rem;
+		margin: 0;
 	}
 
 	.quick-actions {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 2rem;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1.25rem;
 	}
 
 	.action-card {
-		background-color: rgba(255, 255, 255, 0.05);
-		padding: 2.5rem;
-		border-radius: 12px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: rgba(255, 255, 255, 0.055);
+		padding: 2rem 1.75rem;
+		border-radius: 14px;
+		border: 1px solid rgba(255, 255, 255, 0.10);
 		text-align: center;
 		text-decoration: none;
-		transition: transform 0.3s, background-color 0.3s;
+		transition: transform 0.22s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+		box-shadow: 0 2px 12px rgba(0,0,0,0.18);
 	}
 
 	.action-card:hover {
-		transform: translateY(-5px);
-		background-color: rgba(255, 255, 255, 0.08);
-		border-color: var(--color-button);
+		transform: translateY(-4px);
+		background: rgba(255, 255, 255, 0.09);
+		border-color: rgba(211,217,212,0.45);
+		box-shadow: 0 8px 28px rgba(0,0,0,0.28);
 	}
 
 	.icon {
-		font-size: 3rem;
-		margin-bottom: 1.5rem;
+		font-size: 2.4rem;
+		margin-bottom: 1.1rem;
+		display: block;
 	}
 
 	h3 {
-		margin: 0 0 1rem 0;
-		font-size: 1.5rem;
+		margin: 0 0 0.6rem 0;
+		font-size: 1.15rem;
 		color: var(--color-button);
+		font-weight: 700;
 	}
 
 	p {
 		margin: 0;
-		opacity: 0.8;
+		font-size: 0.85rem;
+		color: rgba(255,255,255,0.58);
 		line-height: 1.5;
 	}
 </style>

@@ -3,7 +3,14 @@
 <script>
 	import { Html5QrcodeScanner } from "html5-qrcode";
 
+	let lastScanTime = 0;
+	const SCAN_COOLDOWN = 2000; // 2 seconds
+
 	function onScanSuccess(decodedText: string, decodedResult: any) {
+		const now = Date.now();
+		if (now - lastScanTime < SCAN_COOLDOWN) return;
+		lastScanTime = now;
+
 		// Dispatch event with the token
 		const event = new CustomEvent('qr-scanned', { detail: { token: decodedText } });
 		window.dispatchEvent(event);

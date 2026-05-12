@@ -7,7 +7,7 @@ export const GET: APIRoute = async ({ url }) => {
   // Search by name, email, phone, or ID
   let supabaseQuery = supabaseAdmin
     .from('users')
-    .select('*');
+    .select('*, qr_tokens(token)');
 
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query);
 

@@ -7,7 +7,7 @@ export const GET: APIRoute = async ({ url }) => {
   // Search by name, email, phone, or ID
   let supabaseQuery = supabaseAdmin
     .from('users')
-    .select('*, subscriptions(*)');
+    .select('*, subscriptions(*), qr_tokens(token)');
 
   if (query) {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query);
@@ -27,14 +27,22 @@ export const GET: APIRoute = async ({ url }) => {
 
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
 
-  const transformed = data.map(member => ({
-    ...member,
-    subscriptions: member.subscriptions?.map((sub: any) => ({
-      ...sub,
-      plan: capitalize(sub.plan),
-      status: capitalize(sub.status)
-    }))
-  }));
+  const transformed = data.map(member => {
+    // Ensure subscriptions is always an array
+    const rawSubscriptions = member.subscriptions;
+    const subscriptionsArray = Array.isArray(rawSubscriptions) 
+      ? rawSubscriptions 
+      : (rawSubscriptions ? [rawSubscriptions] : []);
+
+    return {
+      ...member,
+      subscriptions: subscriptionsArray.map((sub: any) => ({
+        ...sub,
+        plan: capitalize(sub.plan),
+        status: capitalize(sub.status)
+      }))
+    };
+  });
 
   return new Response(JSON.stringify(transformed), { status: 200 });
 };

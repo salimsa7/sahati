@@ -1,62 +1,371 @@
 ---
 import MemberLayout from '../../layouts/MemberLayout.astro';
-import SubscriptionCard from '../../components/SubscriptionCard.astro';
 
 const plans = [
 	{
+		id: 'lite',
 		name: 'Lite',
-		price: '$20/mo',
-		features: ['Basic Gym Access', 'Locker Room Access', 'Standard Equipment'],
-		color: '#a8dadc'
+		duration: '1 Month',
+		price: '18',
+		popular: false
 	},
 	{
+		id: 'plus',
 		name: 'Plus',
-		price: '$40/mo',
-		features: ['All Lite Features', 'Group Classes', '1 Guest Pass/mo', 'Steam Room'],
-		color: '#457b9d'
+		duration: '3 Months',
+		price: '30',
+		popular: false
 	},
 	{
+		id: 'pro',
 		name: 'Pro',
-		price: '$60/mo',
-		features: ['All Plus Features', 'Personal Training (1 session)', 'Unlimited Guest Passes', 'Massage Chairs'],
-		color: '#1d3557'
+		duration: '6 Months',
+		price: '55',
+		popular: true
 	},
 	{
+		id: 'elite',
 		name: 'Elite',
-		price: '$100/mo',
-		features: ['All Pro Features', 'Weekly PT Sessions', 'Nutritional Planning', 'Private Locker'],
-		color: '#e63946'
+		duration: '1 Year',
+		price: '95',
+		popular: false
 	}
 ];
 ---
 
 <MemberLayout title="Subscription Plans | Sahati Gym">
-	<section class="plans-header">
-		<h1>Subscription Plans</h1>
-		<p>Choose the plan that fits your fitness goals. To upgrade or renew, please visit the front desk.</p>
-	</section>
+	<div class="luxury-container">
+		<!-- Hero Section -->
+		<section class="hero">
+			<div class="hero-content">
+				<span class="badge">Premium Experience</span>
+				<h1>Subscription <span>Plans</span></h1>
+				<p>Want to renew? Choose a subscription plan based on your preffered membership duration.</p>
+			</div>
+			<div class="hero-glow"></div>
+		</section>
 
-	<div class="plans-grid">
-		{plans.map(plan => (
-			<SubscriptionCard plan={plan} />
-		))}
+		<!-- Plans Section -->
+		<section class="plans-section">
+			<div class="plans-grid">
+				{plans.map(plan => (
+					<div class={`plan-card ${plan.popular ? 'popular' : ''}`} data-id={plan.id}>
+						{plan.popular && <div class="popular-tag">Recommended</div>}
+						
+						<div class="plan-header">
+							<h3>{plan.name}</h3>
+							<div class="duration">Duration: {plan.duration}</div>
+						</div>
+
+						<div class="plan-price">
+							<span class="currency">OMR</span>
+							<span class="amount">{plan.price}</span>
+						</div>
+					</div>
+				))}
+			</div>
+		</section>
+
+		<!-- Support Section -->
+		<section class="support-section">
+			<div class="support-card">
+				<div class="support-info">
+					<p>Contact gym staff at <strong>+968 96535333</strong> to renew your subscription. After payment is confirmed, your membership will be activated.</p>
+				</div>
+				<a href="tel:+96896535333" class="support-cta">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+					Call Support
+				</a>
+			</div>
+		</section>
 	</div>
 </MemberLayout>
 
 <style>
-	.plans-header {
-		text-align: center;
-		margin-bottom: 3rem;
+	.luxury-container {
+		--primary-glow: rgba(211, 217, 212, 0.15);
+		--card-bg: rgba(255, 255, 255, 0.03);
+		--card-border: rgba(255, 255, 255, 0.08);
+		--accent-color: #d3d9d4;
+		
+		color: #ffffff;
+		padding-bottom: 5rem;
+		min-height: 100vh;
 	}
 
-	h1 {
-		font-size: 2.5rem;
-		margin-bottom: 0.5rem;
+	/* Hero Section */
+	.hero {
+		position: relative;
+		text-align: center;
+		padding: 4rem 1.5rem 6rem;
+		overflow: hidden;
+		animation: fadeInDown 0.8s ease-out;
+	}
+
+	@keyframes fadeInDown {
+		from { opacity: 0; transform: translateY(-20px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	.hero-content {
+		position: relative;
+		z-index: 2;
+	}
+
+	.badge {
+		display: inline-block;
+		padding: 0.5rem 1.2rem;
+		background: rgba(211, 217, 212, 0.1);
+		border: 1px solid rgba(211, 217, 212, 0.2);
+		border-radius: 50px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 2px;
+		color: var(--accent-color);
+		margin-bottom: 1.5rem;
+		animation: slideRight 0.6s ease-out forwards;
+		opacity: 0;
+	}
+
+	@keyframes slideRight {
+		from { opacity: 0; transform: translateX(-20px); }
+		to { opacity: 1; transform: translateX(0); }
+	}
+
+	.hero h1 {
+		font-size: clamp(2.5rem, 8vw, 4rem);
+		font-weight: 800;
+		line-height: 1.1;
+		margin: 0 0 1.5rem;
+		letter-spacing: -1px;
+	}
+
+	.hero h1 span {
+		display: block;
+		color: var(--accent-color);
+		text-transform: uppercase;
+		font-style: italic;
+	}
+
+	.hero p {
+		font-size: 1.1rem;
+		opacity: 0.7;
+		max-width: 500px;
+		margin: 0 auto;
+		line-height: 1.6;
+	}
+
+	.hero-glow {
+		position: absolute;
+		top: -20%;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 100%;
+		height: 150%;
+		background: radial-gradient(circle at center, var(--primary-glow) 0%, transparent 70%);
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	/* Plans Grid */
+	.plans-section {
+		padding: 2rem 1.5rem 4rem;
+		margin-top: 0;
 	}
 
 	.plans-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		grid-template-columns: repeat(4, 1fr);
+		gap: 2.5rem;
+		max-width: 1300px;
+		margin: 0 auto;
+	}
+
+	/* Plan Cards */
+	.plan-card {
+		position: relative;
+		background: var(--card-bg);
+		backdrop-filter: blur(10px);
+		border: 1px solid var(--card-border);
+		border-radius: 32px;
+		padding: 3.5rem 2.5rem;
+		display: flex;
+		flex-direction: column;
+		transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+		overflow: hidden;
+		animation: fadeInUp 0.8s ease-out forwards;
+		opacity: 0;
+	}
+
+	.plan-card:nth-child(1) { animation-delay: 0.1s; }
+	.plan-card:nth-child(2) { animation-delay: 0.2s; }
+	.plan-card:nth-child(3) { animation-delay: 0.3s; }
+	.plan-card:nth-child(4) { animation-delay: 0.4s; }
+
+	@keyframes fadeInUp {
+		from { opacity: 0; transform: translateY(40px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	.plan-card:hover {
+		transform: translateY(-10px);
+		border-color: rgba(211, 217, 212, 0.3);
+		background: rgba(255, 255, 255, 0.05);
+		box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+	}
+
+	.plan-card.popular {
+		border-color: var(--accent-color);
+		background: rgba(211, 217, 212, 0.05);
+	}
+
+	.popular-tag {
+		position: absolute;
+		top: 1.2rem;
+		right: -2.5rem;
+		background: var(--accent-color);
+		color: #124e66;
+		padding: 0.4rem 3rem;
+		font-size: 0.7rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		transform: rotate(45deg);
+		z-index: 3;
+	}
+
+	.plan-header h3 {
+		font-size: 1.6rem;
+		font-weight: 700;
+		margin: 0;
+		text-transform: uppercase;
+	}
+
+	.duration {
+		font-size: 0.85rem;
+		opacity: 0.6;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		margin-top: 0.3rem;
+	}
+
+	.plan-price {
+		margin: 2.5rem 0;
+		display: flex;
+		align-items: flex-end;
+		gap: 0.4rem;
+	}
+
+	.currency {
+		font-size: 1.1rem;
+		font-weight: 600;
+		margin-bottom: 0.5rem;
+		opacity: 0.8;
+	}
+
+	.amount {
+		font-size: 3.8rem;
+		font-weight: 800;
+		line-height: 1;
+		letter-spacing: -2px;
+	}
+
+	/* Support Section */
+	.support-section {
+		max-width: 1200px;
+		margin: 5rem auto 0;
+		padding: 0 1.5rem;
+	}
+
+	.support-card {
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--card-border);
+		border-radius: 24px;
+		padding: 2.5rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
 		gap: 2rem;
+	}
+
+	.support-info p {
+		font-size: 1.1rem;
+		opacity: 0.7;
+		max-width: 600px;
+		margin: 0;
+		line-height: 1.6;
+	}
+
+	.support-info strong {
+		color: var(--accent-color);
+		font-size: 1.2rem;
+	}
+
+	.support-cta {
+		display: flex;
+		align-items: center;
+		gap: 0.8rem;
+		padding: 1rem 2rem;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 12px;
+		text-decoration: none;
+		color: #ffffff;
+		font-weight: 700;
+		transition: all 0.3s;
+		white-space: nowrap;
+	}
+
+	.support-cta:hover {
+		background: rgba(255, 255, 255, 0.1);
+		border-color: var(--accent-color);
+		transform: translateX(5px);
+	}
+
+	/* Responsive Grid */
+	@media (max-width: 1200px) {
+		.plans-grid {
+			grid-template-columns: repeat(2, 1fr);
+			max-width: 800px;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.hero {
+			padding: 4rem 1rem 4rem;
+		}
+
+		.hero h1 {
+			font-size: 3rem;
+		}
+
+		.plans-grid {
+			grid-template-columns: 1fr;
+			max-width: 400px;
+		}
+
+		.support-card {
+			padding: 2rem;
+			text-align: center;
+			justify-content: center;
+		}
+
+		.support-cta {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.plan-card.popular {
+			transform: none;
+		}
+
+		.plan-card.popular:hover {
+			transform: translateY(-10px);
+		}
+		
+		.amount {
+			font-size: 3.5rem;
+		}
 	}
 </style>

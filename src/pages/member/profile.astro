@@ -16,7 +16,7 @@ const { data: profile } = await supabase
 	<section class="profile-container">
 		<h1>My Profile</h1>
 
-		<div class="card readonly-info">
+		<div class="card">
 			<h2>Personal Information</h2>
 			<div class="form-group">
 				<label>Full Name</label>
@@ -30,23 +30,26 @@ const { data: profile } = await supabase
 				<label>Phone Number</label>
 				<input type="tel" value={profile?.phone} readonly />
 			</div>
-			<p class="notice">To update your name, email, or phone number, please contact gym staff.</p>
+			<div class="info-notice">
+				<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+				To update your name, email, or phone number, please contact gym staff.
+			</div>
 		</div>
 
-		<div class="card change-password">
+		<div class="card">
 			<h2>Change Password</h2>
 			<form id="password-form">
 				<div class="form-group">
 					<label for="new-password">New Password</label>
-					<input type="password" id="new-password" name="newPassword" required minlength="6" />
+					<input type="password" id="new-password" name="newPassword" placeholder="Min. 6 characters" required minlength="6" />
 				</div>
 				<div class="form-group">
 					<label for="confirm-password">Confirm New Password</label>
-					<input type="password" id="confirm-password" name="confirmNewPassword" required minlength="6" />
+					<input type="password" id="confirm-password" name="confirmNewPassword" placeholder="Repeat new password" required minlength="6" />
 				</div>
-				<button type="submit" class="btn">Update Password</button>
+				<div id="password-message" class="pw-message"></div>
+				<button type="submit" class="btn primary" style="width:100%;margin-top:0.5rem;">Update Password</button>
 			</form>
-			<div id="password-message" class="message"></div>
 		</div>
 	</section>
 </MemberLayout>
@@ -57,40 +60,34 @@ const { data: profile } = await supabase
 	const form = document.getElementById('password-form') as HTMLFormElement;
 	const messageDiv = document.getElementById('password-message');
 
-	form?.addEventListener('submit', async (e) => {
+		form?.addEventListener('submit', async (e) => {
 		e.preventDefault();
 		const formData = new FormData(form);
-		const newPassword = formData.get('newPassword') as string;
+		const newPassword        = formData.get('newPassword') as string;
 		const confirmNewPassword = formData.get('confirmNewPassword') as string;
 		const submitBtn = form.querySelector('button[type="submit"]');
+		const msgEl = document.getElementById('password-message');
 
 		if (newPassword !== confirmNewPassword) {
-			if (messageDiv) {
-				messageDiv.textContent = 'Passwords do not match';
-				messageDiv.className = 'message error';
-			}
+			msgEl!.textContent = 'Passwords do not match.';
+			msgEl!.className = 'pw-message error';
 			return;
 		}
 
 		submitBtn?.classList.add('loading');
-		if (messageDiv) messageDiv.textContent = '';
+		msgEl!.textContent = '';
+		msgEl!.className = 'pw-message';
 
-		const { error } = await supabase.auth.updateUser({
-			password: newPassword
-		});
+		const { error } = await supabase.auth.updateUser({ password: newPassword });
 
 		submitBtn?.classList.remove('loading');
 
 		if (error) {
-			if (messageDiv) {
-				messageDiv.textContent = error.message;
-				messageDiv.className = 'message error';
-			}
+			msgEl!.textContent = error.message;
+			msgEl!.className = 'pw-message error';
 		} else {
-			if (messageDiv) {
-				messageDiv.textContent = 'Password updated successfully!';
-				messageDiv.className = 'message success';
-			}
+			msgEl!.textContent = '✓ Password updated successfully!';
+			msgEl!.className = 'pw-message success';
 			form.reset();
 		}
 	});
@@ -98,91 +95,66 @@ const { data: profile } = await supabase
 
 <style>
 	.profile-container {
-		max-width: 600px;
+		max-width: 580px;
 		margin: 0 auto;
 	}
 
 	h1 {
-		margin-bottom: 2rem;
-		text-align: center;
-	}
-
-	.card {
-		background-color: rgba(255, 255, 255, 0.05);
-		padding: 2rem;
-		border-radius: 12px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		margin-bottom: 2rem;
+		font-size: 1.75rem;
+		margin-bottom: 1.75rem;
 	}
 
 	h2 {
 		margin-top: 0;
-		margin-bottom: 1.5rem;
-		font-size: 1.2rem;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-		padding-bottom: 0.5rem;
-	}
-
-	.form-group {
-		margin-bottom: 1.2rem;
-	}
-
-	label {
-		display: block;
-		margin-bottom: 0.4rem;
-		font-size: 0.9rem;
-		opacity: 0.8;
-	}
-
-	input {
-		width: 100%;
-		padding: 0.8rem;
-		border-radius: 6px;
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		background-color: rgba(0, 0, 0, 0.2);
-		color: white;
-		font-size: 1rem;
+		margin-bottom: 1.4rem;
+		font-size: 1.05rem;
+		border-bottom: 1px solid rgba(255,255,255,0.08);
+		padding-bottom: 0.8rem;
+		font-weight: 700;
 	}
 
 	input[readonly] {
-		opacity: 0.6;
+		opacity: 0.55;
 		cursor: not-allowed;
+		background: rgba(0,0,0,0.12);
 	}
 
-	.notice {
-		font-size: 0.85rem;
-		font-style: italic;
-		opacity: 0.7;
-		margin-top: 1rem;
+	.info-notice {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		font-size: 0.82rem;
+		color: rgba(211,217,212,0.75);
+		background: rgba(69,123,157,0.12);
+		border: 1px solid rgba(69,123,157,0.25);
+		border-radius: var(--radius-sm);
+		padding: 0.65rem 0.9rem;
+		margin-top: 0.75rem;
+		line-height: 1.5;
 	}
 
-	.btn {
-		width: 100%;
-		padding: 0.8rem;
-		background-color: var(--color-button);
-		color: #124e66;
-		border: none;
-		border-radius: 6px;
-		font-weight: bold;
-		cursor: pointer;
-		margin-top: 1rem;
-	}
+	.info-notice svg { flex-shrink: 0; margin-top: 0.1rem; }
 
-	.message {
-		margin-top: 1rem;
-		padding: 0.8rem;
-		border-radius: 6px;
-		text-align: center;
+	.pw-message {
+		margin-top: 0.9rem;
+		padding: 0.7rem 1rem;
+		border-radius: var(--radius-sm);
+		font-size: 0.88rem;
 		font-weight: 500;
+		display: none;
 	}
 
-	.message.error {
-		background-color: rgba(244, 67, 54, 0.1);
-		color: #f44336;
+	.pw-message.error {
+		display: block;
+		background: rgba(230,57,70,0.12);
+		color: #ef9a9a;
+		border: 1px solid rgba(230,57,70,0.25);
 	}
 
-	.message.success {
-		background-color: rgba(76, 175, 80, 0.1);
-		color: #4caf50;
+	.pw-message.success {
+		display: block;
+		background: rgba(76,175,80,0.12);
+		color: #81c784;
+		border: 1px solid rgba(76,175,80,0.25);
 	}
 </style>

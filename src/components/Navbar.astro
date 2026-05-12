@@ -7,23 +7,23 @@ const { role } = Astro.props;
 
 const navItems = {
 	member: [
-		{ name: 'Dashboard', href: '/member/dashboard' },
-		{ name: 'Subscription Plans', href: '/member/subscription-plans' },
-		{ name: 'QR Code', href: '/member/qr-code' },
-		{ name: 'Profile', href: '/member/profile' },
+		{ name: 'Dashboard',           href: '/member/dashboard' },
+		{ name: 'Subscription Plans',  href: '/member/subscription-plans' },
+		{ name: 'QR Code',             href: '/member/qr-code' },
+		{ name: 'Profile',             href: '/member/profile' },
 	],
 	staff: [
-		{ name: 'Dashboard', href: '/staff/dashboard' },
-		{ name: 'QR Verification', href: '/staff/qr-verify' },
-		{ name: 'Member Search', href: '/staff/member-search' },
-		{ name: 'Renew Subscription', href: '/staff/renew-subscription' },
+		{ name: 'Dashboard',           href: '/staff/dashboard' },
+		{ name: 'QR Verification',     href: '/staff/qr-verify' },
+		{ name: 'Member Search',       href: '/staff/member-search' },
+		{ name: 'Renew Subscription',  href: '/staff/renew-subscription' },
 	],
 	admin: [
-		{ name: 'Dashboard', href: '/admin/dashboard' },
-		{ name: 'Manage Members', href: '/admin/manage-members' },
-		{ name: 'Manage Staff', href: '/admin/manage-staff' },
-		{ name: 'Subscriptions', href: '/admin/subscriptions' },
-		{ name: 'Logs', href: '/admin/logs' },
+		{ name: 'Dashboard',           href: '/admin/dashboard' },
+		{ name: 'Members',             href: '/admin/manage-members' },
+		{ name: 'Staff',               href: '/admin/manage-staff' },
+		{ name: 'Subscriptions',       href: '/admin/subscriptions' },
+		{ name: 'Logs',                href: '/admin/logs' },
 	],
 };
 
@@ -33,26 +33,51 @@ const items = navItems[role];
 <nav class="navbar">
 	<div class="nav-logo">
 		<a href="/">
-			<img src="/logo.png" alt="Sahati Gym" />
+			<img src="/logo.png" alt="Sahati Gym" transition:persist />
 		</a>
 	</div>
-	<ul class="nav-links">
-		{items.map(item => (
-			<li><a href={item.href}>{item.name}</a></li>
-		))}
-		<li>
-			<form action="/api/auth/logout" method="POST" id="logout-form">
-				<button type="submit" class="logout-btn">Logout</button>
-			</form>
-		</li>
-	</ul>
+
+	<!-- Hamburger toggle (mobile) -->
+	<button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+		<span></span><span></span><span></span>
+	</button>
+
+	<div class="nav-right" id="nav-right">
+		<ul class="nav-links">
+			{items.map(item => (
+				<li><a href={item.href}>{item.name}</a></li>
+			))}
+		</ul>
+		<form action="/api/auth/logout" method="POST" id="logout-form">
+			<button type="submit" class="logout-btn">Logout</button>
+		</form>
+	</div>
 </nav>
 
 <script>
+	// Logout loading state
 	const logoutForm = document.getElementById('logout-form') as HTMLFormElement;
 	logoutForm?.addEventListener('submit', () => {
 		const btn = logoutForm.querySelector('button');
 		btn?.classList.add('loading');
+	});
+
+	// Active link highlight
+	const currentPath = window.location.pathname;
+	document.querySelectorAll('.nav-links a').forEach(link => {
+		const href = link.getAttribute('href') || '';
+		if (currentPath === href || (href !== '/' && currentPath.startsWith(href))) {
+			link.classList.add('active');
+		}
+	});
+
+	// Mobile hamburger
+	const hamburger = document.getElementById('hamburger');
+	const navRight  = document.getElementById('nav-right');
+	hamburger?.addEventListener('click', () => {
+		const open = navRight!.classList.toggle('open');
+		hamburger.setAttribute('aria-expanded', String(open));
+		hamburger.classList.toggle('is-open', open);
 	});
 </script>
 
@@ -61,15 +86,21 @@ const items = navItems[role];
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1rem 2rem;
-		background-color: rgba(255, 255, 255, 0.1);
-		backdrop-filter: blur(5px);
+		padding: 0.85rem 2rem;
+		background: rgba(9, 46, 62, 0.72);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border-bottom: 1px solid rgba(255,255,255,0.08);
+		position: sticky;
+		top: 0;
+		z-index: 500;
 	}
 
 	.nav-logo {
-		height: 40px;
+		height: 38px;
 		display: flex;
 		align-items: center;
+		flex-shrink: 0;
 	}
 
 	.nav-logo a {
@@ -84,10 +115,16 @@ const items = navItems[role];
 		display: block;
 	}
 
+	.nav-right {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+	}
+
 	.nav-links {
 		display: flex;
 		list-style: none;
-		gap: 1.5rem;
+		gap: 0.25rem;
 		margin: 0;
 		padding: 0;
 		align-items: center;
@@ -95,27 +132,110 @@ const items = navItems[role];
 
 	.nav-links a {
 		text-decoration: none;
+		font-size: 0.875rem;
 		font-weight: 500;
-		transition: opacity 0.2s;
+		color: rgba(255,255,255,0.78);
+		padding: 0.4rem 0.75rem;
+		border-radius: 6px;
+		transition: color 0.15s, background 0.15s;
+		white-space: nowrap;
 	}
 
 	.nav-links a:hover {
-		opacity: 0.7;
+		color: #fff;
+		background: rgba(255,255,255,0.08);
+	}
+
+	.nav-links a.active {
+		color: #fff;
+		background: rgba(255,255,255,0.12);
+		font-weight: 600;
 	}
 
 	.logout-btn {
-		background: none;
-		border: 1px solid var(--color-button);
-		color: var(--color-button);
-		padding: 0.4rem 0.8rem;
-		border-radius: 4px;
+		background: transparent;
+		border: 1.5px solid rgba(211,217,212,0.55);
+		color: #d3d9d4;
+		padding: 0.42rem 1rem;
+		border-radius: 6px;
 		cursor: pointer;
-		font-weight: bold;
-		transition: background-color 0.2s, color 0.2s;
+		font-size: 0.85rem;
+		font-weight: 600;
+		font-family: 'Inter', system-ui, sans-serif;
+		transition: background 0.15s, color 0.15s;
+		position: relative;
+		white-space: nowrap;
 	}
 
 	.logout-btn:hover {
-		background-color: var(--color-button);
-		color: #124e66;
+		background: #d3d9d4;
+		color: #0d3a4d;
+	}
+
+	/* Hamburger */
+	.hamburger {
+		display: none;
+		flex-direction: column;
+		gap: 5px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.4rem;
+		border-radius: 6px;
+	}
+
+	.hamburger span {
+		display: block;
+		width: 22px;
+		height: 2px;
+		background: #fff;
+		border-radius: 2px;
+		transition: transform 0.2s, opacity 0.2s;
+	}
+
+	.hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+	.hamburger.is-open span:nth-child(2) { opacity: 0; }
+	.hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+	/* Mobile */
+	@media (max-width: 768px) {
+		.hamburger { display: flex; }
+
+		.nav-right {
+			display: none;
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0;
+			background: rgba(9, 46, 62, 0.97);
+			border-bottom: 1px solid rgba(255,255,255,0.08);
+			padding: 1rem;
+		}
+
+		.nav-right.open { display: flex; }
+
+		.nav-links {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0;
+		}
+
+		.nav-links li { width: 100%; }
+
+		.nav-links a {
+			display: block;
+			padding: 0.7rem 1rem;
+			font-size: 0.95rem;
+		}
+
+		.logout-btn {
+			width: 100%;
+			margin-top: 0.5rem;
+			padding: 0.65rem 1rem;
+			text-align: center;
+		}
 	}
 </style>

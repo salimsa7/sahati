@@ -4,302 +4,342 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 
 <StaffLayout title="Renew Subscription | Sahati Gym">
 	<section class="renew-container">
-		<h1>Renew Subscription</h1>
-		
-		<div class="search-box card">
-			<h3>1. Select Member</h3>
-			<div class="form-group">
-				<input type="text" id="member-search" placeholder="Search by Name, Email, or Phone..." />
+		<div class="page-header">
+			<h1>Renew Subscription</h1>
+			<p>Search for a member and update their plan and end date.</p>
+		</div>
+
+		<div class="card search-card">
+			<div class="search-wrapper">
+				<svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+				<input type="text" id="member-search" placeholder="Search by name, email, or phone..." />
 			</div>
-			<div class="member-list-container">
+		</div>
+
+		<div class="card table-card">
+			<div class="table-scroll">
 				<table class="member-table">
 					<thead>
 						<tr>
-							<th>Name</th>
-							<th>Email</th>
-							<th>Plan</th>
+							<th>Member</th>
+							<th>Current Plan</th>
+							<th>Status</th>
 							<th>Expiry</th>
 							<th>Action</th>
 						</tr>
 					</thead>
 					<tbody id="member-list-body">
-						<!-- Loaded via JS -->
+						<tr>
+							<td colspan="5" class="empty-row">Loading members…</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
 		</div>
+	</section>
 
-		<div id="renewal-modal" class="modal hidden">
-			<div class="modal-content card">
+	<!-- Renewal Modal -->
+	<div id="renewal-modal" class="modal hidden">
+		<div class="modal-content">
+			<div class="modal-header">
 				<h2>Renew Subscription</h2>
-				<div id="selected-member-info" class="member-info"></div>
-				
-				<div class="form-group">
-					<label for="plan-select">Select Plan</label>
-					<select id="plan-select">
-						<option value="Lite">Lite</option>
-						<option value="Plus">Plus</option>
-						<option value="Pro">Pro</option>
-						<option value="Elite">Elite</option>
-					</select>
-				</div>
-				<div class="form-group">
-					<label for="end-date">New End Date</label>
-					<input type="date" id="end-date" required />
-				</div>
-				<div class="modal-actions">
-					<button id="cancel-btn" class="btn secondary">Cancel</button>
-					<button id="renew-btn" class="btn primary">Confirm Renewal</button>
-				</div>
+			</div>
+			<div id="selected-member-info" class="member-info-box"></div>
+
+			<div class="form-group">
+				<label for="plan-select">Plan</label>
+				<select id="plan-select">
+					<option value="Lite">Lite – 1 Month</option>
+					<option value="Plus">Plus – 3 Months</option>
+					<option value="Pro">Pro – 6 Months</option>
+					<option value="Elite">Elite – 1 Year</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label for="end-date">New End Date</label>
+				<input type="date" id="end-date" required />
+			</div>
+
+			<div class="modal-actions">
+				<button id="cancel-btn" class="btn secondary">Cancel</button>
+				<button id="renew-btn" class="btn primary">Confirm Renewal</button>
 			</div>
 		</div>
+	</div>
 
-		<div id="message" class="message hidden"></div>
-	</section>
+	<div id="toast" class="toast hidden"></div>
 </StaffLayout>
 
 <script>
 	const searchInput = document.getElementById('member-search') as HTMLInputElement;
-	const listBody = document.getElementById('member-list-body');
-	const modal = document.getElementById('renewal-modal');
-	const selectedInfo = document.getElementById('selected-member-info');
-	const cancelBtn = document.getElementById('cancel-btn');
-	const renewBtn = document.getElementById('renew-btn');
-	const messageDiv = document.getElementById('message');
+	const listBody    = document.getElementById('member-list-body');
+	const modal       = document.getElementById('renewal-modal');
+	const selectedInfo= document.getElementById('selected-member-info');
+	const cancelBtn   = document.getElementById('cancel-btn');
+	const renewBtn    = document.getElementById('renew-btn');
+	const planSelect  = document.getElementById('plan-select') as HTMLSelectElement;
+	const endDateInput= document.getElementById('end-date')   as HTMLInputElement;
+	const toast       = document.getElementById('toast');
 
 	let members: any[] = [];
 	let selectedMemberId = '';
 
+	function showToast(msg: string, type: 'success' | 'error' = 'success') {
+		toast!.textContent = msg;
+		toast!.className = `toast ${type}`;
+		setTimeout(() => { toast!.className = 'toast hidden'; }, 3500);
+	}
+
 	async function loadMembers(query = '') {
 		try {
-			const response = await fetch(`/api/staff/search-member?q=${query}`);
-			members = await response.json();
+			const res = await fetch(`/api/staff/search-member?q=${encodeURIComponent(query)}`);
+			members = await res.json();
 			renderList();
-		} catch (error) {
-			console.error('Failed to load members', error);
+		} catch {
+			showToast('Failed to load members.', 'error');
 		}
 	}
 
+	function formatDate(date: string | Date) {
+		return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+	}
+
+	function statusBadge(sub: any) {
+		if (!sub) return '<span class="badge badge-warning">No Sub</span>';
+		const today = new Date();
+		const end   = new Date(sub.end_date);
+		const active= end >= today;
+		return active
+			? '<span class="badge badge-success">Active</span>'
+			: '<span class="badge badge-danger">Expired</span>';
+	}
+
+	function calculateExpiryDate(plan: string) {
+		const d = new Date();
+		const p = plan.toLowerCase();
+		if (p === 'lite')  d.setMonth(d.getMonth() + 1);
+		else if (p === 'plus')  d.setMonth(d.getMonth() + 3);
+		else if (p === 'pro')   d.setMonth(d.getMonth() + 6);
+		else if (p === 'elite') d.setFullYear(d.getFullYear() + 1);
+		else d.setMonth(d.getMonth() + 1);
+		return d.toISOString().split('T')[0];
+	}
+
 	function renderList() {
+		if (!members.length) {
+			listBody!.innerHTML = '<tr><td colspan="5" class="empty-row">No members found.</td></tr>';
+			return;
+		}
 		listBody!.innerHTML = members.map(m => {
-			const sub = m.subscriptions?.[0];
-			const expiry = sub ? new Date(sub.end_date).toLocaleDateString() : 'N/A';
+			const sub    = m.subscriptions?.[0];
+			const expiry = sub ? formatDate(sub.end_date) : '—';
+			const plan   = sub?.plan ? (sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)) : '—';
 			return `
 				<tr>
-					<td>${m.name}</td>
-					<td>${m.email}</td>
-					<td>${sub?.plan || 'None'}</td>
+					<td>
+						<div class="member-cell">
+							<strong>${m.name}</strong>
+							<span class="sub-text">${m.email}</span>
+						</div>
+					</td>
+					<td>${plan}</td>
+					<td>${statusBadge(sub)}</td>
 					<td>${expiry}</td>
 					<td>
-						<button class="action-link" onclick="window.selectMember('${m.id}')">Select</button>
+						<button class="btn primary sm-btn select-btn" data-id="${m.id}">Select</button>
 					</td>
 				</tr>
 			`;
 		}).join('');
+
+		listBody!.querySelectorAll('.select-btn').forEach(btn => {
+			btn.addEventListener('click', e => {
+				const id = (e.currentTarget as HTMLElement).dataset.id!;
+				openModal(id);
+			});
+		});
 	}
 
-	(window as any).selectMember = (id: string) => {
-		const member = members.find(m => m.id === id);
-		if (!member) return;
+	function openModal(id: string) {
+		const m = members.find(x => x.id === id);
+		if (!m) return;
+		selectedMemberId = m.id;
+		const sub = m.subscriptions?.[0];
 
-		selectedMemberId = member.id;
-		const sub = member.subscriptions?.[0];
-		
 		selectedInfo!.innerHTML = `
-			<p><strong>Member:</strong> ${member.name}</p>
-			<p><strong>Current Plan:</strong> ${sub?.plan || 'None'}</p>
-			<p><strong>Current Expiry:</strong> ${sub ? new Date(sub.end_date).toLocaleDateString() : 'N/A'}</p>
+			<div class="info-row"><span class="info-label">Member</span><span>${m.name}</span></div>
+			<div class="info-row"><span class="info-label">Email</span><span>${m.email}</span></div>
+			<div class="info-row"><span class="info-label">Current Plan</span><span>${sub?.plan ? (sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)) : '—'}</span></div>
+			<div class="info-row"><span class="info-label">Current Expiry</span><span>${sub ? formatDate(sub.end_date) : '—'}</span></div>
 		`;
 
-		// Pre-fill plan if exists
 		if (sub?.plan) {
-			(document.getElementById('plan-select') as HTMLSelectElement).value = sub.plan;
+			const planVal = sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1);
+			if ([...planSelect.options].some(o => o.value === planVal)) planSelect.value = planVal;
 		}
-
+		endDateInput.value = calculateExpiryDate(planSelect.value);
 		modal!.classList.remove('hidden');
-	};
+	}
+
+	planSelect?.addEventListener('change', () => {
+		endDateInput.value = calculateExpiryDate(planSelect.value);
+	});
 
 	cancelBtn?.addEventListener('click', () => modal!.classList.add('hidden'));
 
-	async function confirmRenewal() {
-		const plan = (document.getElementById('plan-select') as HTMLSelectElement).value;
-		const endDate = (document.getElementById('end-date') as HTMLInputElement).value;
+	renewBtn?.addEventListener('click', async () => {
+		const plan    = planSelect.value;
+		const endDate = endDateInput.value;
+		if (!endDate) { showToast('Please select an end date.', 'error'); return; }
 
-		if (!endDate) {
-			alert('Please select an end date');
-			return;
-		}
-
-		renewBtn?.classList.add('loading');
-
+		renewBtn.classList.add('loading');
 		try {
-			const response = await fetch('/api/staff/renew-subscription', {
+			const res = await fetch('/api/staff/renew-subscription', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ memberId: selectedMemberId, plan, endDate })
 			});
-			const result = await response.json();
-
+			const result = await res.json();
 			if (result.success) {
-				messageDiv!.textContent = 'Subscription renewed successfully!';
-				messageDiv!.className = 'message success';
-				messageDiv!.classList.remove('hidden');
 				modal!.classList.add('hidden');
+				showToast('✓ Subscription renewed and QR code updated!', 'success');
 				loadMembers(searchInput.value);
-				
-				setTimeout(() => messageDiv!.classList.add('hidden'), 3000);
 			} else {
-				alert(result.error || 'Renewal failed.');
+				showToast(result.error || 'Renewal failed.', 'error');
 			}
-		} catch (error) {
-			console.error('Renewal failed', error);
+		} catch {
+			showToast('Network error. Please try again.', 'error');
 		} finally {
-			renewBtn?.classList.remove('loading');
+			renewBtn.classList.remove('loading');
 		}
-	}
-
-	renewBtn?.addEventListener('click', confirmRenewal);
-
-	searchInput?.addEventListener('input', (e) => {
-		loadMembers((e.target as HTMLInputElement).value);
 	});
 
-	// Initial load
+	let debounceTimer: ReturnType<typeof setTimeout>;
+	searchInput?.addEventListener('input', e => {
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			loadMembers((e.target as HTMLInputElement).value);
+		}, 300);
+	});
+
 	loadMembers();
 </script>
 
 <style>
 	.renew-container {
-		max-width: 900px;
+		max-width: 960px;
 		margin: 0 auto;
 	}
 
-	h1 {
+	.page-header {
 		margin-bottom: 2rem;
+	}
+
+	.page-header h1 {
+		font-size: 1.75rem;
+		margin-bottom: 0.3rem;
+	}
+
+	.page-header p {
+		color: var(--color-text-muted);
+		margin: 0;
+	}
+
+	/* Search */
+	.search-card { padding: 1.25rem 1.5rem; }
+
+	.search-wrapper {
+		position: relative;
+	}
+
+	.search-icon {
+		position: absolute;
+		left: 1rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--color-text-subtle);
+		pointer-events: none;
+	}
+
+	.search-wrapper input {
+		padding-left: 2.75rem;
+	}
+
+	/* Table */
+	.table-card { padding: 0; overflow: hidden; }
+
+	.table-scroll { overflow-x: auto; }
+
+	.member-table { min-width: 600px; }
+
+	.member-cell {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+	}
+
+	.sub-text {
+		font-size: 0.8rem;
+		color: var(--color-text-muted);
+	}
+
+	.empty-row {
 		text-align: center;
+		padding: 3rem !important;
+		color: var(--color-text-subtle);
 	}
 
-	.card {
-		background-color: rgba(255, 255, 255, 0.05);
-		padding: 2rem;
-		border-radius: 12px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		margin-bottom: 2rem;
+	.sm-btn {
+		padding: 0.45rem 1rem !important;
+		font-size: 0.82rem !important;
 	}
 
-	.member-list-container {
-		margin-top: 1.5rem;
-		overflow-x: auto;
+	/* Modal member info box */
+	.member-info-box {
+		background: rgba(0,0,0,0.18);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		padding: 1rem 1.25rem;
+		margin-bottom: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
-	.member-table {
-		width: 100%;
-		border-collapse: collapse;
+	.info-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 		font-size: 0.9rem;
 	}
 
-	.member-table th {
-		text-align: left;
-		padding: 1rem;
-		border-bottom: 2px solid rgba(255,255,255,0.1);
-		opacity: 0.8;
+	.info-label {
+		color: var(--color-text-muted);
+		font-size: 0.82rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 	}
 
-	.member-table td {
-		padding: 1rem;
-		border-bottom: 1px solid rgba(255,255,255,0.05);
-	}
-
-	.action-link {
-		background: none;
-		border: none;
-		color: var(--color-button);
-		text-decoration: underline;
-		cursor: pointer;
-		font-weight: bold;
-	}
-
-	/* Modal */
-	.modal {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: rgba(0,0,0,0.8);
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 1000;
-	}
-
-	.modal-content {
-		width: 100%;
-		max-width: 500px;
-	}
-
-	.member-info {
-		background: rgba(255,255,255,0.05);
-		padding: 1rem;
-		border-radius: 8px;
-		margin-bottom: 1.5rem;
-	}
-
-	.member-info p {
-		margin: 0.3rem 0;
-	}
-
-	.modal-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 1rem;
-		margin-top: 2rem;
-	}
-
-	.btn {
-		padding: 0.8rem 1.5rem;
-		border-radius: 6px;
-		font-weight: bold;
-		cursor: pointer;
-		border: none;
-	}
-
-	.btn.primary {
-		background-color: var(--color-button);
-		color: #124e66;
-	}
-
-	.btn.secondary {
-		background-color: transparent;
-		color: var(--color-text);
-		border: 1px solid rgba(255,255,255,0.2);
-	}
-
-	input, select {
-		width: 100%;
-		padding: 0.8rem;
-		border-radius: 6px;
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		background-color: rgba(0, 0, 0, 0.2);
-		color: white;
-	}
-
-	.hidden {
-		display: none;
-	}
-
-	.message {
+	.toast {
 		position: fixed;
 		bottom: 2rem;
 		right: 2rem;
-		padding: 1rem 2rem;
-		border-radius: 8px;
-		font-weight: bold;
-		z-index: 1001;
+		padding: 0.85rem 1.6rem;
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		font-size: 0.88rem;
+		z-index: 2000;
+		box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+		animation: slideUp 0.22s ease;
 	}
 
-	.message.success {
-		background-color: #4caf50;
-		color: white;
+	.toast.success { background: #2e7d32; color: #fff; }
+	.toast.error   { background: #c62828; color: #fff; }
+	.toast.hidden  { display: none !important; }
+
+	@keyframes slideUp {
+		from { opacity: 0; transform: translateY(10px); }
+		to   { opacity: 1; transform: translateY(0); }
 	}
 </style>

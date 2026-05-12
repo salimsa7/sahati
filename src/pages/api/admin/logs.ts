@@ -10,5 +10,14 @@ export const GET: APIRoute = async ({ url }) => {
   const { data, error } = await query.order('scanned_at', { ascending: false });
 
   if (error) return new Response(error.message, { status: 500 });
-  return new Response(JSON.stringify(data), { status: 200 });
+
+  const transformed = data.map(log => {
+    const user = Array.isArray(log.users) ? log.users[0] : log.users;
+    return {
+      ...log,
+      users: user
+    };
+  });
+
+  return new Response(JSON.stringify(transformed), { status: 200 });
 };
