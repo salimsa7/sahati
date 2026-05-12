@@ -203,16 +203,17 @@ const items = navItems[role];
 
 		.nav-right {
 			display: none;
-			position: absolute;
-			top: 100%;
+			position: fixed;
+			top: 60px;
 			left: 0;
 			right: 0;
 			flex-direction: column;
 			align-items: stretch;
 			gap: 0;
-			background: rgba(9, 46, 62, 0.97);
+			background: rgba(9, 46, 62, 0.98);
 			border-bottom: 1px solid rgba(255,255,255,0.08);
 			padding: 1rem;
+			z-index: 499;
 		}
 
 		.nav-right.open { display: flex; }
