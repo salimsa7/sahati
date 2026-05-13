@@ -66,163 +66,163 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 			</div>
 		</div>
 	</div>
-
-	<div id="toast" class="toast hidden"></div>
 </StaffLayout>
 
 <script>
-	const searchInput = document.getElementById('member-search') as HTMLInputElement;
-	const listBody    = document.getElementById('member-list-body');
-	const modal       = document.getElementById('renewal-modal');
-	const selectedInfo= document.getElementById('selected-member-info');
-	const cancelBtn   = document.getElementById('cancel-btn');
-	const renewBtn    = document.getElementById('renew-btn');
-	const planSelect  = document.getElementById('plan-select') as HTMLSelectElement;
-	const endDateInput= document.getElementById('end-date')   as HTMLInputElement;
-	const toast       = document.getElementById('toast');
+	function init() {
+		const searchInput = document.getElementById('member-search') as HTMLInputElement;
+		const listBody    = document.getElementById('member-list-body');
+		const modal       = document.getElementById('renewal-modal');
+		const selectedInfo= document.getElementById('selected-member-info');
+		const cancelBtn   = document.getElementById('cancel-btn');
+		const renewBtn    = document.getElementById('renew-btn');
+		const planSelect  = document.getElementById('plan-select') as HTMLSelectElement;
+		const endDateInput= document.getElementById('end-date')   as HTMLInputElement;
 
-	let members: any[] = [];
-	let selectedMemberId = '';
+		let members: any[] = [];
+		let selectedMemberId = '';
 
-	function showToast(msg: string, type: 'success' | 'error' = 'success') {
-		toast!.textContent = msg;
-		toast!.className = `toast ${type}`;
-		setTimeout(() => { toast!.className = 'toast hidden'; }, 3500);
-	}
-
-	async function loadMembers(query = '') {
-		try {
-			const res = await fetch(`/api/staff/search-member?q=${encodeURIComponent(query)}`);
-			members = await res.json();
-			renderList();
-		} catch {
-			showToast('Failed to load members.', 'error');
-		}
-	}
-
-	function formatDate(date: string | Date) {
-		return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-	}
-
-	function statusBadge(sub: any) {
-		if (!sub) return '<span class="badge badge-warning">No Sub</span>';
-		const today = new Date();
-		const end   = new Date(sub.end_date);
-		const active= end >= today;
-		return active
-			? '<span class="badge badge-success">Active</span>'
-			: '<span class="badge badge-danger">Expired</span>';
-	}
-
-	function calculateExpiryDate(plan: string) {
-		const d = new Date();
-		const p = plan.toLowerCase();
-		if (p === 'lite')  d.setMonth(d.getMonth() + 1);
-		else if (p === 'plus')  d.setMonth(d.getMonth() + 3);
-		else if (p === 'pro')   d.setMonth(d.getMonth() + 6);
-		else if (p === 'elite') d.setFullYear(d.getFullYear() + 1);
-		else d.setMonth(d.getMonth() + 1);
-		return d.toISOString().split('T')[0];
-	}
-
-	function renderList() {
-		if (!members.length) {
-			listBody!.innerHTML = '<tr><td colspan="5" class="empty-row">No members found.</td></tr>';
-			return;
-		}
-		listBody!.innerHTML = members.map(m => {
-			const sub    = m.subscriptions?.[0];
-			const expiry = sub ? formatDate(sub.end_date) : '—';
-			const plan   = sub?.plan ? (sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)) : '—';
-			return `
-				<tr>
-					<td>
-						<div class="member-cell">
-							<strong>${m.name}</strong>
-							<span class="sub-text">${m.email}</span>
-						</div>
-					</td>
-					<td>${plan}</td>
-					<td>${statusBadge(sub)}</td>
-					<td>${expiry}</td>
-					<td>
-						<button class="btn primary sm-btn select-btn" data-id="${m.id}">Select</button>
-					</td>
-				</tr>
-			`;
-		}).join('');
-
-		listBody!.querySelectorAll('.select-btn').forEach(btn => {
-			btn.addEventListener('click', e => {
-				const id = (e.currentTarget as HTMLElement).dataset.id!;
-				openModal(id);
-			});
-		});
-	}
-
-	function openModal(id: string) {
-		const m = members.find(x => x.id === id);
-		if (!m) return;
-		selectedMemberId = m.id;
-		const sub = m.subscriptions?.[0];
-
-		selectedInfo!.innerHTML = `
-			<div class="info-row"><span class="info-label">Member</span><span>${m.name}</span></div>
-			<div class="info-row"><span class="info-label">Email</span><span>${m.email}</span></div>
-			<div class="info-row"><span class="info-label">Current Plan</span><span>${sub?.plan ? (sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)) : '—'}</span></div>
-			<div class="info-row"><span class="info-label">Current Expiry</span><span>${sub ? formatDate(sub.end_date) : '—'}</span></div>
-		`;
-
-		if (sub?.plan) {
-			const planVal = sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1);
-			if ([...planSelect.options].some(o => o.value === planVal)) planSelect.value = planVal;
-		}
-		endDateInput.value = calculateExpiryDate(planSelect.value);
-		modal!.classList.remove('hidden');
-	}
-
-	planSelect?.addEventListener('change', () => {
-		endDateInput.value = calculateExpiryDate(planSelect.value);
-	});
-
-	cancelBtn?.addEventListener('click', () => modal!.classList.add('hidden'));
-
-	renewBtn?.addEventListener('click', async () => {
-		const plan    = planSelect.value;
-		const endDate = endDateInput.value;
-		if (!endDate) { showToast('Please select an end date.', 'error'); return; }
-
-		renewBtn.classList.add('loading');
-		try {
-			const res = await fetch('/api/staff/renew-subscription', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ memberId: selectedMemberId, plan, endDate })
-			});
-			const result = await res.json();
-			if (result.success) {
-				modal!.classList.add('hidden');
-				showToast('✓ Subscription renewed and QR code updated!', 'success');
-				loadMembers(searchInput.value);
-			} else {
-				showToast(result.error || 'Renewal failed.', 'error');
+		async function loadMembers(query = '') {
+			try {
+				const res = await fetch(`/api/staff/search-member?q=${encodeURIComponent(query)}`);
+				members = await res.json();
+				renderList();
+			} catch {
+				window.showToast('Failed to load members.', 'error');
 			}
-		} catch {
-			showToast('Network error. Please try again.', 'error');
-		} finally {
-			renewBtn.classList.remove('loading');
 		}
-	});
 
-	let debounceTimer: ReturnType<typeof setTimeout>;
-	searchInput?.addEventListener('input', e => {
-		clearTimeout(debounceTimer);
-		debounceTimer = setTimeout(() => {
-			loadMembers((e.target as HTMLInputElement).value);
-		}, 300);
-	});
+		function formatDate(date: string | Date) {
+			return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+		}
 
-	loadMembers();
+		function statusBadge(sub: any) {
+			if (!sub) return '<span class="badge badge-warning">No Sub</span>';
+			const today = new Date();
+			const end   = new Date(sub.end_date);
+			const active= end >= today;
+			return active
+				? '<span class="badge badge-success">Active</span>'
+				: '<span class="badge badge-danger">Expired</span>';
+		}
+
+		function calculateExpiryDate(plan: string) {
+			const d = new Date();
+			const p = plan.toLowerCase();
+			if (p === 'lite')  d.setMonth(d.getMonth() + 1);
+			else if (p === 'plus')  d.setMonth(d.getMonth() + 3);
+			else if (p === 'pro')   d.setMonth(d.getMonth() + 6);
+			else if (p === 'elite') d.setFullYear(d.getFullYear() + 1);
+			else d.setMonth(d.getMonth() + 1);
+			return d.toISOString().split('T')[0];
+		}
+
+		function renderList() {
+			if (!listBody) return;
+			if (!members.length) {
+				listBody.innerHTML = '<tr><td colspan="5" class="empty-row">No members found.</td></tr>';
+				return;
+			}
+			listBody.innerHTML = members.map(m => {
+				const sub    = m.subscriptions?.[0];
+				const expiry = sub ? formatDate(sub.end_date) : '—';
+				const plan   = sub?.plan ? (sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)) : '—';
+				return `
+					<tr>
+						<td>
+							<div class="member-cell">
+								<strong>${m.name}</strong>
+								<span class="sub-text">${m.email}</span>
+							</div>
+						</td>
+						<td>${plan}</td>
+						<td>${statusBadge(sub)}</td>
+						<td>${expiry}</td>
+						<td>
+							<button class="btn primary sm-btn select-btn" data-id="${m.id}">Select</button>
+						</td>
+					</tr>
+				`;
+			}).join('');
+
+			listBody.querySelectorAll('.select-btn').forEach(btn => {
+				btn.addEventListener('click', e => {
+					const id = (e.currentTarget as HTMLElement).dataset.id!;
+					openModal(id);
+				});
+			});
+		}
+
+		function openModal(id: string) {
+			const m = members.find(x => x.id === id);
+			if (!m) return;
+			selectedMemberId = m.id;
+			const sub = m.subscriptions?.[0];
+
+			if (selectedInfo) {
+				selectedInfo.innerHTML = `
+					<div class="info-row"><span class="info-label">Member</span><span>${m.name}</span></div>
+					<div class="info-row"><span class="info-label">Email</span><span>${m.email}</span></div>
+					<div class="info-row"><span class="info-label">Current Plan</span><span>${sub?.plan ? (sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)) : '—'}</span></div>
+					<div class="info-row"><span class="info-label">Current Expiry</span><span>${sub ? formatDate(sub.end_date) : '—'}</span></div>
+				`;
+			}
+
+			if (sub?.plan && planSelect) {
+				const planVal = sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1);
+				if ([...planSelect.options].some(o => o.value === planVal)) planSelect.value = planVal;
+			}
+			if (endDateInput && planSelect) {
+				endDateInput.value = calculateExpiryDate(planSelect.value);
+			}
+			modal?.classList.remove('hidden');
+		}
+
+		planSelect?.addEventListener('change', () => {
+			if (endDateInput) endDateInput.value = calculateExpiryDate(planSelect.value);
+		});
+
+		cancelBtn?.addEventListener('click', () => modal?.classList.add('hidden'));
+
+		renewBtn?.addEventListener('click', async () => {
+			const plan    = planSelect?.value || 'Lite';
+			const endDate = endDateInput?.value;
+			if (!endDate) { window.showToast('Please select an end date.', 'error'); return; }
+
+			renewBtn.classList.add('loading');
+			try {
+				const res = await fetch('/api/staff/renew-subscription', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ memberId: selectedMemberId, plan, endDate })
+				});
+				const result = await res.json();
+				if (result.success) {
+					modal?.classList.add('hidden');
+					window.showToast('✓ Subscription renewed and QR code updated!', 'success');
+					loadMembers(searchInput?.value || '');
+				} else {
+					window.showToast(result.error || 'Renewal failed.', 'error');
+				}
+			} catch {
+				window.showToast('Network error. Please try again.', 'error');
+			} finally {
+				renewBtn.classList.remove('loading');
+			}
+		});
+
+		let debounceTimer: ReturnType<typeof setTimeout>;
+		searchInput?.addEventListener('input', e => {
+			clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(() => {
+				loadMembers((e.target as HTMLInputElement).value);
+			}, 300);
+		});
+
+		loadMembers();
+	}
+
+	document.addEventListener('astro:page-load', init);
 </script>
 
 <style>
@@ -319,27 +319,5 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-	}
-
-	.toast {
-		position: fixed;
-		bottom: 2rem;
-		right: 2rem;
-		padding: 0.85rem 1.6rem;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		font-size: 0.88rem;
-		z-index: 2000;
-		box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-		animation: slideUp 0.22s ease;
-	}
-
-	.toast.success { background: #2e7d32; color: #fff; }
-	.toast.error   { background: #c62828; color: #fff; }
-	.toast.hidden  { display: none !important; }
-
-	@keyframes slideUp {
-		from { opacity: 0; transform: translateY(10px); }
-		to   { opacity: 1; transform: translateY(0); }
 	}
 </style>

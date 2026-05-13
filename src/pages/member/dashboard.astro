@@ -68,7 +68,7 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', 
 			) : (
 				<div class="no-sub">
 					<span class="no-sub-icon">📋</span>
-					<p>No active subscription found.<br/>Please contact the front desk to get started.</p>
+					<p>No active subscription found.<br/>Your subscription will be added by staff or admin according to your subscription plan.</p>
 				</div>
 			)}
 		</div>
@@ -104,6 +104,20 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', 
 		</div>
 	</section>
 </MemberLayout>
+
+<script>
+	function init() {
+		// Check for registration success
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.get('registered') === 'true') {
+			window.showToast('Registration successful! Your subscription will be added by staff or admin according to your subscription plan.', 'success');
+			// Clear param
+			window.history.replaceState({}, document.title, window.location.pathname);
+		}
+	}
+
+	document.addEventListener('astro:page-load', init);
+</script>
 
 <style>
 	.welcome {

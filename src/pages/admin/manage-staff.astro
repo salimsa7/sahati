@@ -69,153 +69,149 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 			</form>
 		</div>
 	</div>
-
-	<div id="toast" class="toast hidden"></div>
 </AdminLayout>
 
 <script>
-	let staffMembers: any[] = [];
-	const tableBody   = document.getElementById('staff-table-body');
-	const emptyState  = document.getElementById('empty-state');
-	const searchInput = document.getElementById('staff-search') as HTMLInputElement;
-	const addBtn      = document.getElementById('add-staff-btn');
-	const modal       = document.getElementById('staff-modal');
-	const cancelBtn   = document.getElementById('cancel-modal');
-	const form        = document.getElementById('staff-form') as HTMLFormElement;
-	const pwdGroup    = document.getElementById('password-group');
-	const toast       = document.getElementById('toast');
+	function init() {
+		let staffMembers: any[] = [];
+		const tableBody   = document.getElementById('staff-table-body');
+		const emptyState  = document.getElementById('empty-state');
+		const searchInput = document.getElementById('staff-search') as HTMLInputElement;
+		const addBtn      = document.getElementById('add-staff-btn');
+		const modal       = document.getElementById('staff-modal');
+		const cancelBtn   = document.getElementById('cancel-modal');
+		const form        = document.getElementById('staff-form') as HTMLFormElement;
+		const pwdGroup    = document.getElementById('password-group');
 
-	function showToast(msg: string, type: 'success' | 'error' = 'success') {
-		toast!.textContent = msg;
-		toast!.className = `toast ${type}`;
-		setTimeout(() => { toast!.className = 'toast hidden'; }, 3500);
-	}
-
-	function formatDate(date: string) {
-		if (!date) return '—';
-		return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-	}
-
-	async function loadStaff(query = '') {
-		try {
-			const res = await fetch(`/api/admin/staff?q=${encodeURIComponent(query)}`);
-			staffMembers = await res.json();
-			renderTable();
-		} catch {
-			showToast('Failed to load staff.', 'error');
+		function formatDate(date: string) {
+			if (!date) return '—';
+			return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 		}
-	}
 
-	function renderTable() {
-		if (!staffMembers.length) {
-			tableBody!.innerHTML = '';
-			emptyState!.classList.remove('hidden');
-			return;
+		async function loadStaff(query = '') {
+			try {
+				const res = await fetch(`/api/admin/staff?q=${encodeURIComponent(query)}`);
+				staffMembers = await res.json();
+				renderTable();
+			} catch {
+				window.showToast('Failed to load staff.', 'error');
+			}
 		}
-		emptyState!.classList.add('hidden');
-		tableBody!.innerHTML = staffMembers.map(s => `
-			<tr>
-				<td>
-					<div class="member-cell">
-						<strong>${s.name}</strong>
-						<span class="sub-text">${s.email}</span>
-					</div>
-				</td>
-				<td>${s.phone || '—'}</td>
-				<td class="date-cell">${formatDate(s.created_at)}</td>
-				<td>
-					<div class="action-group">
-						<button class="btn-action btn-edit edit-btn" data-id="${s.id}">Edit</button>
-						<button class="btn-action btn-delete delete-btn" data-id="${s.id}">Delete</button>
-					</div>
-				</td>
-			</tr>
-		`).join('');
 
-		tableBody!.querySelectorAll('.edit-btn').forEach(btn => {
-			btn.addEventListener('click', e => {
-				const id = (e.currentTarget as HTMLElement).dataset.id;
-				if (id) openEditModal(id);
+		function renderTable() {
+			if (!tableBody) return;
+			if (!staffMembers.length) {
+				tableBody.innerHTML = '';
+				emptyState?.classList.remove('hidden');
+				return;
+			}
+			emptyState?.classList.add('hidden');
+			tableBody.innerHTML = staffMembers.map(s => `
+				<tr>
+					<td>
+						<div class="member-cell">
+							<strong>${s.name}</strong>
+							<span class="sub-text">${s.email}</span>
+						</div>
+					</td>
+					<td>${s.phone || '—'}</td>
+					<td class="date-cell">${formatDate(s.created_at)}</td>
+					<td>
+						<div class="action-group">
+							<button class="btn-action btn-edit edit-btn" data-id="${s.id}">Edit</button>
+							<button class="btn-action btn-delete delete-btn" data-id="${s.id}">Delete</button>
+						</div>
+					</td>
+				</tr>
+			`).join('');
+
+			tableBody.querySelectorAll('.edit-btn').forEach(btn => {
+				btn.addEventListener('click', e => {
+					const id = (e.currentTarget as HTMLElement).dataset.id;
+					if (id) openEditModal(id);
+				});
 			});
+
+			tableBody.querySelectorAll('.delete-btn').forEach(btn => {
+				btn.addEventListener('click', e => {
+					const id = (e.currentTarget as HTMLElement).dataset.id;
+					if (id) handleDelete(id, e.currentTarget as HTMLElement);
+				});
+			});
+		}
+
+		function openEditModal(id: string) {
+			const s = staffMembers.find(x => x.id === id);
+			if (!s) return;
+			(document.getElementById('modal-title') as HTMLElement).textContent = 'Edit Staff';
+			(document.getElementById('staff-id')    as HTMLInputElement).value  = s.id;
+			(document.getElementById('staff-name')  as HTMLInputElement).value  = s.name;
+			(document.getElementById('staff-email') as HTMLInputElement).value  = s.email;
+			(document.getElementById('staff-phone') as HTMLInputElement).value  = s.phone || '';
+			pwdGroup?.classList.add('hidden');
+			modal?.classList.remove('hidden');
+		}
+
+		async function handleDelete(id: string, btn: HTMLElement) {
+			if (!confirm('Delete this staff member? This action cannot be undone.')) return;
+			btn.classList.add('loading');
+			try {
+				const res = await fetch(`/api/admin/staff?id=${id}`, { method: 'DELETE' });
+				if (res.ok) {
+					window.showToast('Staff member deleted.', 'success');
+					loadStaff(searchInput?.value || '');
+				} else {
+					window.showToast('Delete failed: ' + await res.text(), 'error');
+				}
+			} finally {
+				btn.classList.remove('loading');
+			}
+		}
+
+		addBtn?.addEventListener('click', () => {
+			(document.getElementById('modal-title') as HTMLElement).textContent = 'Add New Staff';
+			form.reset();
+			(document.getElementById('staff-id') as HTMLInputElement).value = '';
+			pwdGroup?.classList.remove('hidden');
+			modal?.classList.remove('hidden');
 		});
 
-		tableBody!.querySelectorAll('.delete-btn').forEach(btn => {
-			btn.addEventListener('click', e => {
-				const id = (e.currentTarget as HTMLElement).dataset.id;
-				if (id) handleDelete(id, e.currentTarget as HTMLElement);
-			});
+		cancelBtn?.addEventListener('click', () => modal?.classList.add('hidden'));
+
+		form?.addEventListener('submit', async e => {
+			e.preventDefault();
+			const data      = Object.fromEntries(new FormData(form).entries());
+			const isEdit    = !!data.id;
+			const submitBtn = form.querySelector('button[type="submit"]');
+			submitBtn?.classList.add('loading');
+			try {
+				const res = await fetch('/api/admin/staff', {
+					method: isEdit ? 'PUT' : 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(data)
+				});
+				if (res.ok) {
+					modal?.classList.add('hidden');
+					window.showToast(isEdit ? '✓ Staff updated.' : '✓ Staff added.', 'success');
+					loadStaff(searchInput?.value || '');
+				} else {
+					window.showToast('Operation failed: ' + await res.text(), 'error');
+				}
+			} finally {
+				submitBtn?.classList.remove('loading');
+			}
 		});
+
+		let debounce: ReturnType<typeof setTimeout>;
+		searchInput?.addEventListener('input', e => {
+			clearTimeout(debounce);
+			debounce = setTimeout(() => loadStaff((e.target as HTMLInputElement).value), 300);
+		});
+
+		loadStaff();
 	}
 
-	function openEditModal(id: string) {
-		const s = staffMembers.find(x => x.id === id);
-		if (!s) return;
-		(document.getElementById('modal-title') as HTMLElement).textContent = 'Edit Staff';
-		(document.getElementById('staff-id')    as HTMLInputElement).value  = s.id;
-		(document.getElementById('staff-name')  as HTMLInputElement).value  = s.name;
-		(document.getElementById('staff-email') as HTMLInputElement).value  = s.email;
-		(document.getElementById('staff-phone') as HTMLInputElement).value  = s.phone || '';
-		pwdGroup!.classList.add('hidden');
-		modal!.classList.remove('hidden');
-	}
-
-	async function handleDelete(id: string, btn: HTMLElement) {
-		if (!confirm('Delete this staff member? This action cannot be undone.')) return;
-		btn.classList.add('loading');
-		try {
-			const res = await fetch(`/api/admin/staff?id=${id}`, { method: 'DELETE' });
-			if (res.ok) {
-				showToast('Staff member deleted.', 'success');
-				loadStaff(searchInput.value);
-			} else {
-				showToast('Delete failed: ' + await res.text(), 'error');
-			}
-		} finally {
-			btn.classList.remove('loading');
-		}
-	}
-
-	addBtn?.addEventListener('click', () => {
-		(document.getElementById('modal-title') as HTMLElement).textContent = 'Add New Staff';
-		form.reset();
-		(document.getElementById('staff-id') as HTMLInputElement).value = '';
-		pwdGroup!.classList.remove('hidden');
-		modal!.classList.remove('hidden');
-	});
-
-	cancelBtn?.addEventListener('click', () => modal!.classList.add('hidden'));
-
-	form.addEventListener('submit', async e => {
-		e.preventDefault();
-		const data      = Object.fromEntries(new FormData(form).entries());
-		const isEdit    = !!data.id;
-		const submitBtn = form.querySelector('button[type="submit"]');
-		submitBtn?.classList.add('loading');
-		try {
-			const res = await fetch('/api/admin/staff', {
-				method: isEdit ? 'PUT' : 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(data)
-			});
-			if (res.ok) {
-				modal!.classList.add('hidden');
-				showToast(isEdit ? '✓ Staff updated.' : '✓ Staff added.', 'success');
-				loadStaff(searchInput.value);
-			} else {
-				showToast('Operation failed: ' + await res.text(), 'error');
-			}
-		} finally {
-			submitBtn?.classList.remove('loading');
-		}
-	});
-
-	let debounce: ReturnType<typeof setTimeout>;
-	searchInput?.addEventListener('input', e => {
-		clearTimeout(debounce);
-		debounce = setTimeout(() => loadStaff((e.target as HTMLInputElement).value), 300);
-	});
-
-	loadStaff();
+	document.addEventListener('astro:page-load', init);
 </script>
 
 <style>

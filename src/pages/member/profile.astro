@@ -57,40 +57,52 @@ const { data: profile } = await supabase
 <script>
 	import { supabase } from '../../lib/supabase';
 
-	const form = document.getElementById('password-form') as HTMLFormElement;
-	const messageDiv = document.getElementById('password-message');
+	function init() {
+		const form = document.getElementById('password-form') as HTMLFormElement;
+		const messageDiv = document.getElementById('password-message');
 
 		form?.addEventListener('submit', async (e) => {
-		e.preventDefault();
-		const formData = new FormData(form);
-		const newPassword        = formData.get('newPassword') as string;
-		const confirmNewPassword = formData.get('confirmNewPassword') as string;
-		const submitBtn = form.querySelector('button[type="submit"]');
-		const msgEl = document.getElementById('password-message');
+			e.preventDefault();
+			const formData = new FormData(form);
+			const newPassword        = formData.get('newPassword') as string;
+			const confirmNewPassword = formData.get('confirmNewPassword') as string;
+			const submitBtn = form.querySelector('button[type="submit"]');
+			const msgEl = document.getElementById('password-message');
 
-		if (newPassword !== confirmNewPassword) {
-			msgEl!.textContent = 'Passwords do not match.';
-			msgEl!.className = 'pw-message error';
-			return;
-		}
+			if (newPassword !== confirmNewPassword) {
+				if (msgEl) {
+					msgEl.textContent = 'Passwords do not match.';
+					msgEl.className = 'pw-message error';
+				}
+				return;
+			}
 
-		submitBtn?.classList.add('loading');
-		msgEl!.textContent = '';
-		msgEl!.className = 'pw-message';
+			submitBtn?.classList.add('loading');
+			if (msgEl) {
+				msgEl.textContent = '';
+				msgEl.className = 'pw-message';
+			}
 
-		const { error } = await supabase.auth.updateUser({ password: newPassword });
+			const { error } = await supabase.auth.updateUser({ password: newPassword });
 
-		submitBtn?.classList.remove('loading');
+			submitBtn?.classList.remove('loading');
 
-		if (error) {
-			msgEl!.textContent = error.message;
-			msgEl!.className = 'pw-message error';
-		} else {
-			msgEl!.textContent = '✓ Password updated successfully!';
-			msgEl!.className = 'pw-message success';
-			form.reset();
-		}
-	});
+			if (error) {
+				if (msgEl) {
+					msgEl.textContent = error.message;
+					msgEl.className = 'pw-message error';
+				}
+			} else {
+				if (msgEl) {
+					msgEl.textContent = '✓ Password updated successfully!';
+					msgEl.className = 'pw-message success';
+				}
+				form.reset();
+			}
+		});
+	}
+
+	document.addEventListener('astro:page-load', init);
 </script>
 
 <style>

@@ -48,83 +48,89 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 </AdminLayout>
 
 <script>
-	let logs: any[] = [];
-	const tableBody   = document.getElementById('logs-table-body');
-	const emptyState  = document.getElementById('empty-state');
-	const searchInput = document.getElementById('log-search') as HTMLInputElement;
-	const refreshBtn  = document.getElementById('refresh-btn');
-	const logStats    = document.getElementById('log-stats');
+	function init() {
+		let logs: any[] = [];
+		const tableBody   = document.getElementById('logs-table-body');
+		const emptyState  = document.getElementById('empty-state');
+		const searchInput = document.getElementById('log-search') as HTMLInputElement;
+		const refreshBtn  = document.getElementById('refresh-btn');
+		const logStats    = document.getElementById('log-stats');
 
-	function formatTs(ts: string) {
-		return new Date(ts).toLocaleString('en-US', {
-			month: 'short', day: 'numeric', year: 'numeric',
-			hour: '2-digit', minute: '2-digit'
-		});
-	}
-
-	function truncateId(id: string) {
-		if (!id) return 'System';
-		return id.length > 16 ? id.slice(0, 8) + '…' + id.slice(-4) : id;
-	}
-
-	async function loadLogs(query = '') {
-		const url = query ? `/api/admin/logs?memberId=${encodeURIComponent(query)}` : '/api/admin/logs';
-		const res = await fetch(url);
-		logs = await res.json();
-		renderTable();
-		renderStats();
-	}
-
-	function renderTable() {
-		if (!logs.length) {
-			tableBody!.innerHTML = '';
-			emptyState!.classList.remove('hidden');
-			return;
+		function formatTs(ts: string) {
+			return new Date(ts).toLocaleString('en-US', {
+				month: 'short', day: 'numeric', year: 'numeric',
+				hour: '2-digit', minute: '2-digit'
+			});
 		}
-		emptyState!.classList.add('hidden');
-		tableBody!.innerHTML = logs.map(l => {
-			const granted = l.result === 'granted';
-			const badgeClass = granted ? 'badge-success' : 'badge-danger';
-			const badgeLabel = granted ? '✓ Granted' : '✗ Denied';
-			const memberId   = l.user_id || null;
-			return `
-				<tr>
-					<td>
-						<div class="member-cell">
-							<strong>${l.users?.name || '<span class="unknown">Unknown</span>'}</strong>
-						</div>
-					</td>
-					<td>
-						<code class="id-cell" title="${memberId || 'N/A'}">${memberId ? truncateId(memberId) : '—'}</code>
-					</td>
-					<td class="ts-cell">${formatTs(l.scanned_at)}</td>
-					<td class="staff-cell">${l.staff?.name || '—'}</td>
-					<td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
-				</tr>
+
+		function truncateId(id: string) {
+			if (!id) return 'System';
+			return id.length > 16 ? id.slice(0, 8) + '…' + id.slice(-4) : id;
+		}
+
+		async function loadLogs(query = '') {
+			const url = query ? `/api/admin/logs?memberId=${encodeURIComponent(query)}` : '/api/admin/logs';
+			const res = await fetch(url);
+			logs = await res.json();
+			renderTable();
+			renderStats();
+		}
+
+		function renderTable() {
+			if (!tableBody) return;
+			if (!logs.length) {
+				tableBody.innerHTML = '';
+				emptyState?.classList.remove('hidden');
+				return;
+			}
+			emptyState?.classList.add('hidden');
+			tableBody.innerHTML = logs.map(l => {
+				const granted = l.result === 'granted';
+				const badgeClass = granted ? 'badge-success' : 'badge-danger';
+				const badgeLabel = granted ? '✓ Granted' : '✗ Denied';
+				const memberId   = l.user_id || null;
+				return `
+					<tr>
+						<td>
+							<div class="member-cell">
+								<strong>${l.users?.name || '<span class="unknown">Unknown</span>'}</strong>
+							</div>
+						</td>
+						<td>
+							<code class="id-cell" title="${memberId || 'N/A'}">${memberId ? truncateId(memberId) : '—'}</code>
+						</td>
+						<td class="ts-cell">${formatTs(l.scanned_at)}</td>
+						<td class="staff-cell">${l.staff?.name || '—'}</td>
+						<td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+					</tr>
+				`;
+			}).join('');
+		}
+
+		function renderStats() {
+			if (!logStats) return;
+			const granted = logs.filter(l => l.result === 'granted').length;
+			const denied  = logs.filter(l => l.result === 'denied').length;
+			if (!logs.length) { logStats.innerHTML = ''; return; }
+			logStats.innerHTML = `
+				<span class="stat"><span class="stat-label">Total</span><strong>${logs.length}</strong></span>
+				<span class="stat granted"><span class="stat-label">Granted</span><strong>${granted}</strong></span>
+				<span class="stat denied"><span class="stat-label">Denied</span><strong>${denied}</strong></span>
 			`;
-		}).join('');
+		}
+
+		refreshBtn?.addEventListener('click', () => loadLogs(searchInput?.value || ''));
+
+		let debounce: ReturnType<typeof setTimeout>;
+		searchInput?.addEventListener('input', e => {
+			clearTimeout(debounce);
+			debounce = setTimeout(() => loadLogs((e.target as HTMLInputElement).value), 300);
+		});
+
+		loadLogs();
 	}
 
-	function renderStats() {
-		const granted = logs.filter(l => l.result === 'granted').length;
-		const denied  = logs.filter(l => l.result === 'denied').length;
-		if (!logs.length) { logStats!.innerHTML = ''; return; }
-		logStats!.innerHTML = `
-			<span class="stat"><span class="stat-label">Total</span><strong>${logs.length}</strong></span>
-			<span class="stat granted"><span class="stat-label">Granted</span><strong>${granted}</strong></span>
-			<span class="stat denied"><span class="stat-label">Denied</span><strong>${denied}</strong></span>
-		`;
-	}
-
-	refreshBtn?.addEventListener('click', () => loadLogs(searchInput.value));
-
-	let debounce: ReturnType<typeof setTimeout>;
-	searchInput?.addEventListener('input', e => {
-		clearTimeout(debounce);
-		debounce = setTimeout(() => loadLogs((e.target as HTMLInputElement).value), 300);
-	});
-
-	loadLogs();
+	document.addEventListener('astro:page-load', init);
 </script>
 
 <style>

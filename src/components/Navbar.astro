@@ -55,30 +55,37 @@ const items = navItems[role];
 </nav>
 
 <script>
-	// Logout loading state
-	const logoutForm = document.getElementById('logout-form') as HTMLFormElement;
-	logoutForm?.addEventListener('submit', () => {
-		const btn = logoutForm.querySelector('button');
-		btn?.classList.add('loading');
-	});
+	function init() {
+		// Logout loading state
+		const logoutForm = document.getElementById('logout-form') as HTMLFormElement;
+		logoutForm?.addEventListener('submit', () => {
+			const btn = logoutForm.querySelector('button');
+			btn?.classList.add('loading');
+		});
 
-	// Active link highlight
-	const currentPath = window.location.pathname;
-	document.querySelectorAll('.nav-links a').forEach(link => {
-		const href = link.getAttribute('href') || '';
-		if (currentPath === href || (href !== '/' && currentPath.startsWith(href))) {
-			link.classList.add('active');
-		}
-	});
+		// Active link highlight
+		const currentPath = window.location.pathname;
+		document.querySelectorAll('.nav-links a').forEach(link => {
+			const href = link.getAttribute('href') || '';
+			// Highlight if exact match OR if path starts with href (but don't match '/' too broadly)
+			if (currentPath === href || (href !== '/' && currentPath.startsWith(href))) {
+				link.classList.add('active');
+			} else {
+				link.classList.remove('active');
+			}
+		});
 
-	// Mobile hamburger
-	const hamburger = document.getElementById('hamburger');
-	const navRight  = document.getElementById('nav-right');
-	hamburger?.addEventListener('click', () => {
-		const open = navRight!.classList.toggle('open');
-		hamburger.setAttribute('aria-expanded', String(open));
-		hamburger.classList.toggle('is-open', open);
-	});
+		// Mobile hamburger
+		const hamburger = document.getElementById('hamburger');
+		const navRight  = document.getElementById('nav-right');
+		hamburger?.addEventListener('click', () => {
+			const open = navRight?.classList.toggle('open');
+			hamburger.setAttribute('aria-expanded', String(open));
+			hamburger.classList.toggle('is-open', open);
+		});
+	}
+
+	document.addEventListener('astro:page-load', init);
 </script>
 
 <style>

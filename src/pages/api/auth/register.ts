@@ -24,13 +24,13 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   });
 
   if (error) {
-    return new Response(error.message, { status: 400 });
+    return new Response(error.message, { status: error.status || 400 });
   }
 
   const { session, user } = data;
   if (!user) return new Response('User creation failed', { status: 500 });
 
-  // 2. Insert into users table (using admin client to bypass RLS if needed, or if policies allow insert on registration)
+  // 2. Insert into users table
   const { error: profileError } = await supabaseAdmin
     .from('users')
     .insert({
@@ -41,22 +41,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     });
 
   if (profileError) {
-    // Should probably delete the auth user if this fails, but for simplicity:
+    console.error('Profile insertion error:', profileError);
     return new Response(profileError.message, { status: 500 });
-  }
-
-  // 3. Generate QR token (UUID)
-  const qrToken = crypto.randomUUID(); // Use native crypto.randomUUID() instead of uuid package if possible
-
-  const { error: qrError } = await supabaseAdmin
-    .from('qr_tokens')
-    .insert({
-      user_id: user.id,
-      token: qrToken,
-    });
-
-  if (qrError) {
-    return new Response(qrError.message, { status: 500 });
   }
 
   // Set cookies for SSR
@@ -76,5 +62,5 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   }
 
   // Auto-login happens with signUp in some configs, but we redirect to dashboard
-  return redirect('/member/dashboard');
+  return redirect('/member/dashboard?registered=true');
 };

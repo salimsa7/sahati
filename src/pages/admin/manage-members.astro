@@ -27,6 +27,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 							<th>Member</th>
 							<th>Phone</th>
 							<th>Joined</th>
+							<th>QR Status</th>
 							<th>Actions</th>
 						</tr>
 					</thead>
@@ -69,153 +70,182 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 			</form>
 		</div>
 	</div>
-
-	<div id="toast" class="toast hidden"></div>
 </AdminLayout>
 
 <script>
-	let members: any[] = [];
-	const tableBody   = document.getElementById('members-table-body');
-	const emptyState  = document.getElementById('empty-state');
-	const searchInput = document.getElementById('member-search') as HTMLInputElement;
-	const addBtn      = document.getElementById('add-member-btn');
-	const modal       = document.getElementById('member-modal');
-	const cancelBtn   = document.getElementById('cancel-modal');
-	const form        = document.getElementById('member-form') as HTMLFormElement;
-	const pwdGroup    = document.getElementById('password-group');
-	const toast       = document.getElementById('toast');
+	function init() {
+		let members: any[] = [];
+		const tableBody   = document.getElementById('members-table-body');
+		const emptyState  = document.getElementById('empty-state');
+		const searchInput = document.getElementById('member-search') as HTMLInputElement;
+		const addBtn      = document.getElementById('add-member-btn');
+		const modal       = document.getElementById('member-modal');
+		const cancelBtn   = document.getElementById('cancel-modal');
+		const form        = document.getElementById('member-form') as HTMLFormElement;
+		const pwdGroup    = document.getElementById('password-group');
 
-	function showToast(msg: string, type: 'success' | 'error' = 'success') {
-		toast!.textContent = msg;
-		toast!.className = `toast ${type}`;
-		setTimeout(() => { toast!.className = 'toast hidden'; }, 3500);
-	}
-
-	function formatDate(date: string) {
-		if (!date) return '—';
-		return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-	}
-
-	async function loadMembers(query = '') {
-		try {
-			const res = await fetch(`/api/admin/members?q=${encodeURIComponent(query)}`);
-			members = await res.json();
-			renderTable();
-		} catch {
-			showToast('Failed to load members.', 'error');
+		function formatDate(date: string) {
+			if (!date) return '—';
+			return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 		}
-	}
 
-	function renderTable() {
-		if (!members.length) {
-			tableBody!.innerHTML = '';
-			emptyState!.classList.remove('hidden');
-			return;
+		async function loadMembers(query = '') {
+			try {
+				const res = await fetch(`/api/admin/members?q=${encodeURIComponent(query)}`);
+				members = await res.json();
+				renderTable();
+			} catch {
+				window.showToast('Failed to load members.', 'error');
+			}
 		}
-		emptyState!.classList.add('hidden');
-		tableBody!.innerHTML = members.map(m => `
-			<tr>
-				<td>
-					<div class="member-cell">
-						<strong>${m.name}</strong>
-						<span class="sub-text">${m.email}</span>
-					</div>
-				</td>
-				<td>${m.phone || '—'}</td>
-				<td class="date-cell">${formatDate(m.created_at)}</td>
-				<td>
-					<div class="action-group">
-						<button class="btn-action btn-edit edit-btn" data-id="${m.id}">Edit</button>
-						<button class="btn-action btn-delete delete-btn" data-id="${m.id}">Delete</button>
-					</div>
-				</td>
-			</tr>
-		`).join('');
 
-		tableBody!.querySelectorAll('.edit-btn').forEach(btn => {
-			btn.addEventListener('click', e => {
-				const id = (e.currentTarget as HTMLElement).dataset.id;
-				if (id) openEditModal(id);
+		function renderTable() {
+			if (!tableBody) return;
+			if (!members.length) {
+				tableBody.innerHTML = '';
+				emptyState?.classList.remove('hidden');
+				return;
+			}
+			emptyState?.classList.add('hidden');
+			tableBody.innerHTML = members.map(m => {
+				const hasQR = m.qr_tokens && (Array.isArray(m.qr_tokens) ? m.qr_tokens.length > 0 : !!m.qr_tokens.token);
+				return `
+				<tr>
+					<td>
+						<div class="member-cell">
+							<strong>${m.name}</strong>
+							<span class="sub-text">${m.email}</span>
+						</div>
+					</td>
+					<td>${m.phone || '—'}</td>
+					<td class="date-cell">${formatDate(m.created_at)}</td>
+					<td>
+						${hasQR 
+							? '<span class="qr-status-valid">✓ Active</span>' 
+							: `<button class="btn-action btn-qr generate-qr-btn" data-id="${m.id}">Generate</button>`
+						}
+					</td>
+					<td>
+						<div class="action-group">
+							<button class="btn-action btn-edit edit-btn" data-id="${m.id}">Edit</button>
+							<button class="btn-action btn-delete delete-btn" data-id="${m.id}">Delete</button>
+						</div>
+					</td>
+				</tr>
+			`;}).join('');
+
+			tableBody.querySelectorAll('.generate-qr-btn').forEach(btn => {
+				btn.addEventListener('click', async e => {
+					const target = e.currentTarget as HTMLButtonElement;
+					const id = target.dataset.id;
+					if (!id) return;
+					target.classList.add('loading');
+					try {
+						const res = await fetch('/api/staff/generate-qr', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ userId: id })
+						});
+						if (res.ok) {
+							window.showToast('QR Token generated.', 'success');
+							loadMembers(searchInput?.value || '');
+						} else {
+							const errorData = await res.json();
+							window.showToast(errorData.error || 'Failed to generate QR.', 'error');
+						}
+					} finally {
+						target.classList.remove('loading');
+					}
+				});
 			});
+
+			tableBody.querySelectorAll('.edit-btn').forEach(btn => {
+				btn.addEventListener('click', e => {
+					const id = (e.currentTarget as HTMLElement).dataset.id;
+					if (id) openEditModal(id);
+				});
+			});
+
+			tableBody.querySelectorAll('.delete-btn').forEach(btn => {
+				btn.addEventListener('click', e => {
+					const id = (e.currentTarget as HTMLElement).dataset.id;
+					if (id) handleDelete(id, e.currentTarget as HTMLElement);
+				});
+			});
+		}
+
+		function openEditModal(id: string) {
+			const m = members.find(x => x.id === id);
+			if (!m) return;
+			(document.getElementById('modal-title') as HTMLElement).textContent = 'Edit Member';
+			(document.getElementById('member-id')    as HTMLInputElement).value  = m.id;
+			(document.getElementById('member-name')  as HTMLInputElement).value  = m.name;
+			(document.getElementById('member-email') as HTMLInputElement).value  = m.email;
+			(document.getElementById('member-phone') as HTMLInputElement).value  = m.phone || '';
+			pwdGroup?.classList.add('hidden');
+			modal?.classList.remove('hidden');
+		}
+
+		async function handleDelete(id: string, btn: HTMLElement) {
+			if (!confirm('Delete this member? This action cannot be undone.')) return;
+			btn.classList.add('loading');
+			try {
+				const res = await fetch(`/api/admin/members?id=${id}`, { method: 'DELETE' });
+				if (res.ok) {
+					window.showToast('Member deleted.', 'success');
+					loadMembers(searchInput?.value || '');
+				} else {
+					window.showToast('Delete failed: ' + await res.text(), 'error');
+				}
+			} finally {
+				btn.classList.remove('loading');
+			}
+		}
+
+		addBtn?.addEventListener('click', () => {
+			(document.getElementById('modal-title') as HTMLElement).textContent = 'Add New Member';
+			form.reset();
+			(document.getElementById('member-id') as HTMLInputElement).value = '';
+			pwdGroup?.classList.remove('hidden');
+			modal?.classList.remove('hidden');
 		});
 
-		tableBody!.querySelectorAll('.delete-btn').forEach(btn => {
-			btn.addEventListener('click', e => {
-				const id = (e.currentTarget as HTMLElement).dataset.id;
-				if (id) handleDelete(id, e.currentTarget as HTMLElement);
-			});
+		cancelBtn?.addEventListener('click', () => modal?.classList.add('hidden'));
+
+		form?.addEventListener('submit', async e => {
+			e.preventDefault();
+			const data      = Object.fromEntries(new FormData(form).entries());
+			const isEdit    = !!data.id;
+			const submitBtn = form.querySelector('button[type="submit"]');
+			submitBtn?.classList.add('loading');
+			try {
+				const res = await fetch('/api/admin/members', {
+					method: isEdit ? 'PUT' : 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(data)
+				});
+				if (res.ok) {
+					modal?.classList.add('hidden');
+					window.showToast(isEdit ? '✓ Member updated.' : '✓ Member added.', 'success');
+					loadMembers(searchInput?.value || '');
+				} else {
+					window.showToast('Operation failed: ' + await res.text(), 'error');
+				}
+			} finally {
+				submitBtn?.classList.remove('loading');
+			}
 		});
+
+		let debounce: ReturnType<typeof setTimeout>;
+		searchInput?.addEventListener('input', e => {
+			clearTimeout(debounce);
+			debounce = setTimeout(() => loadMembers((e.target as HTMLInputElement).value), 300);
+		});
+
+		loadMembers();
 	}
 
-	function openEditModal(id: string) {
-		const m = members.find(x => x.id === id);
-		if (!m) return;
-		(document.getElementById('modal-title') as HTMLElement).textContent = 'Edit Member';
-		(document.getElementById('member-id')    as HTMLInputElement).value  = m.id;
-		(document.getElementById('member-name')  as HTMLInputElement).value  = m.name;
-		(document.getElementById('member-email') as HTMLInputElement).value  = m.email;
-		(document.getElementById('member-phone') as HTMLInputElement).value  = m.phone || '';
-		pwdGroup!.classList.add('hidden');
-		modal!.classList.remove('hidden');
-	}
-
-	async function handleDelete(id: string, btn: HTMLElement) {
-		if (!confirm('Delete this member? This action cannot be undone.')) return;
-		btn.classList.add('loading');
-		try {
-			const res = await fetch(`/api/admin/members?id=${id}`, { method: 'DELETE' });
-			if (res.ok) {
-				showToast('Member deleted.', 'success');
-				loadMembers(searchInput.value);
-			} else {
-				showToast('Delete failed: ' + await res.text(), 'error');
-			}
-		} finally {
-			btn.classList.remove('loading');
-		}
-	}
-
-	addBtn?.addEventListener('click', () => {
-		(document.getElementById('modal-title') as HTMLElement).textContent = 'Add New Member';
-		form.reset();
-		(document.getElementById('member-id') as HTMLInputElement).value = '';
-		pwdGroup!.classList.remove('hidden');
-		modal!.classList.remove('hidden');
-	});
-
-	cancelBtn?.addEventListener('click', () => modal!.classList.add('hidden'));
-
-	form.addEventListener('submit', async e => {
-		e.preventDefault();
-		const data      = Object.fromEntries(new FormData(form).entries());
-		const isEdit    = !!data.id;
-		const submitBtn = form.querySelector('button[type="submit"]');
-		submitBtn?.classList.add('loading');
-		try {
-			const res = await fetch('/api/admin/members', {
-				method: isEdit ? 'PUT' : 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(data)
-			});
-			if (res.ok) {
-				modal!.classList.add('hidden');
-				showToast(isEdit ? '✓ Member updated.' : '✓ Member added.', 'success');
-				loadMembers(searchInput.value);
-			} else {
-				showToast('Operation failed: ' + await res.text(), 'error');
-			}
-		} finally {
-			submitBtn?.classList.remove('loading');
-		}
-	});
-
-	let debounce: ReturnType<typeof setTimeout>;
-	searchInput?.addEventListener('input', e => {
-		clearTimeout(debounce);
-		debounce = setTimeout(() => loadMembers((e.target as HTMLInputElement).value), 300);
-	});
-
-	loadMembers();
+	document.addEventListener('astro:page-load', init);
 </script>
 
 <style>
@@ -288,6 +318,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 	}
 	.btn-delete:hover { background: rgba(230,57,70,0.3); }
 
+	.btn-qr {
+		background: rgba(76,175,80,0.15);
+		color: #81c784;
+		border-color: rgba(76,175,80,0.3);
+	}
+	.btn-qr:hover { background: rgba(76,175,80,0.3); }
+
+	.qr-status-valid {
+		color: #81c784;
+		font-size: 0.82rem;
+		font-weight: 600;
+	}
+
 	.empty-state {
 		display: flex;
 		flex-direction: column;
@@ -297,28 +340,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 		text-align: center;
 	}
 	.empty-state p { color: var(--color-text-subtle); margin: 0; }
-
-	/* Toast */
-	.toast {
-		position: fixed;
-		bottom: 2rem;
-		right: 2rem;
-		padding: 0.85rem 1.6rem;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		font-size: 0.88rem;
-		z-index: 2000;
-		box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-		animation: slideUp 0.22s ease;
-	}
-	.toast.success { background: #2e7d32; color: #fff; }
-	.toast.error   { background: #c62828; color: #fff; }
-	.toast.hidden  { display: none !important; }
-
-	@keyframes slideUp {
-		from { opacity: 0; transform: translateY(10px); }
-		to   { opacity: 1; transform: translateY(0); }
-	}
 
 	@media (max-width: 600px) {
 		.page-header { flex-direction: column; }

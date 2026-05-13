@@ -46,44 +46,58 @@ import Layout from '../../layouts/Layout.astro';
 </Layout>
 
 <script>
-	const form = document.getElementById('register-form') as HTMLFormElement;
-	const submitBtn = form?.querySelector('button[type="submit"]');
+	function init() {
+		const form = document.getElementById('register-form') as HTMLFormElement;
+		const submitBtn = form?.querySelector('button[type="submit"]');
 
-	form?.addEventListener('submit', async (e) => {
-		const password = (document.getElementById('password') as HTMLInputElement).value;
-		const confirmPassword = (document.getElementById('confirmPassword') as HTMLInputElement).value;
+		// Check for error in URL (fallback for direct redirects if any remain)
+		const urlParams = new URLSearchParams(window.location.search);
+		const error = urlParams.get('error');
+		if (error) {
+			window.showToast(error, 'error');
+			// Clear the error from URL without refreshing
+			window.history.replaceState({}, document.title, window.location.pathname);
+		}
 
-		if (password !== confirmPassword) {
+		form?.addEventListener('submit', async (e) => {
 			e.preventDefault();
-			alert('Passwords do not match');
-			return;
-		}
+			const password = (document.getElementById('password') as HTMLInputElement).value;
+			const confirmPassword = (document.getElementById('confirmPassword') as HTMLInputElement).value;
 
-		// Since this is a standard form action in the original code, 
-		// I'll convert it to a fetch call to show the loader, or just add the class before submission.
-		// Let's convert to fetch for consistency.
-		
-		e.preventDefault();
-		submitBtn?.classList.add('loading');
-
-		try {
-			const formData = new FormData(form);
-			const response = await fetch('/api/auth/register', {
-				method: 'POST',
-				body: formData
-			});
-
-			if (response.ok) {
-				window.location.href = '/member/dashboard';
-			} else {
-				alert('Registration failed: ' + await response.text());
+			if (password !== confirmPassword) {
+				window.showToast('Passwords do not match', 'error');
+				return;
 			}
-		} catch (err) {
-			alert('An error occurred during registration.');
-		} finally {
-			submitBtn?.classList.remove('loading');
-		}
-	});
+
+			submitBtn?.classList.add('loading');
+
+			const formData = new FormData(form);
+			try {
+				const response = await fetch(form.action, {
+					method: 'POST',
+					body: formData
+				});
+
+				if (response.ok) {
+					if (response.redirected) {
+						window.location.href = response.url;
+					} else {
+						window.location.href = '/member/dashboard?registered=true';
+					}
+				} else {
+					const errorText = await response.text();
+					window.showToast(errorText || 'Registration failed', 'error');
+				}
+			} catch (err) {
+				window.showToast('An error occurred during registration', 'error');
+			} finally {
+				submitBtn?.classList.remove('loading');
+			}
+		});
+	}
+
+	// Support View Transitions
+	document.addEventListener('astro:page-load', init);
 </script>
 
 <style>

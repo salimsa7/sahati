@@ -3,29 +3,38 @@
 <script>
 	import { Html5QrcodeScanner } from "html5-qrcode";
 
-	let lastScanTime = 0;
-	const SCAN_COOLDOWN = 2000; // 2 seconds
+	function init() {
+		let lastScanTime = 0;
+		const SCAN_COOLDOWN = 2000; // 2 seconds
 
-	function onScanSuccess(decodedText: string, decodedResult: any) {
-		const now = Date.now();
-		if (now - lastScanTime < SCAN_COOLDOWN) return;
-		lastScanTime = now;
+		function onScanSuccess(decodedText: string, decodedResult: any) {
+			const now = Date.now();
+			if (now - lastScanTime < SCAN_COOLDOWN) return;
+			lastScanTime = now;
 
-		// Dispatch event with the token
-		const event = new CustomEvent('qr-scanned', { detail: { token: decodedText } });
-		window.dispatchEvent(event);
+			// Dispatch event with the token
+			const event = new CustomEvent('qr-scanned', { detail: { token: decodedText } });
+			window.dispatchEvent(event);
+		}
+
+		function onScanFailure(error: any) {
+			// handle scan failure, usually better to ignore and keep scanning
+		}
+
+		const html5QrcodeScanner = new Html5QrcodeScanner(
+			"qr-reader",
+			{ fps: 10, qrbox: { width: 250, height: 250 } },
+			/* verbose= */ false
+		);
+		html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+		// Cleanup for View Transitions
+		document.addEventListener('astro:after-swap', () => {
+			html5QrcodeScanner.clear().catch(err => console.error("Failed to clear scanner", err));
+		}, { once: true });
 	}
 
-	function onScanFailure(error: any) {
-		// handle scan failure, usually better to ignore and keep scanning
-	}
-
-	const html5QrcodeScanner = new Html5QrcodeScanner(
-		"qr-reader",
-		{ fps: 10, qrbox: { width: 250, height: 250 } },
-		/* verbose= */ false
-	);
-	html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+	document.addEventListener('astro:page-load', init);
 </script>
 
 <style>

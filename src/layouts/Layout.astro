@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from 'astro:transitions';
+import Snackbar from '../components/Snackbar.astro';
 
 interface Props {
 	title?: string;
@@ -24,6 +25,19 @@ const { title = 'Sahati Gym' } = Astro.props;
 	</head>
 	<body>
 		<slot />
+		<div id="toast" class="toast hidden"></div>
+
+		<script is:inline>
+			window.showToast = (message, type = 'success') => {
+				const toast = document.getElementById('toast');
+				if (!toast) return;
+				toast.textContent = message;
+				toast.className = `toast ${type}`;
+				setTimeout(() => {
+					toast.className = 'toast hidden';
+				}, 3500);
+			};
+		</script>
 	</body>
 </html>
 

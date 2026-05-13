@@ -8,7 +8,18 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'User ID is required' }), { status: 400 });
   }
 
-  // Check if token already exists
+  // 1. Check if member has a subscription
+  const { data: sub } = await supabaseAdmin
+    .from('subscriptions')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!sub) {
+    return new Response(JSON.stringify({ error: 'Member must have a subscription before generating a QR code.' }), { status: 400 });
+  }
+
+  // 2. Check if token already exists
   const { data: existing } = await supabaseAdmin
     .from('qr_tokens')
     .select('token')

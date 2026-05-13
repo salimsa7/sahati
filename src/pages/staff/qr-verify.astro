@@ -36,90 +36,103 @@ import QRScanner from '../../components/QRScanner.astro';
 </StaffLayout>
 
 <script>
-	const tabs = document.querySelectorAll('.tab-btn');
-	const tabContents = document.querySelectorAll('.tab-content');
-	const manualVerifyBtn = document.getElementById('manual-verify-btn');
-	const qrInput = document.getElementById('qr-token') as HTMLInputElement;
-	const resultOverlay = document.getElementById('result-overlay');
-	const closeResultBtn = document.getElementById('close-result');
+	function init() {
+		const tabs = document.querySelectorAll('.tab-btn');
+		const tabContents = document.querySelectorAll('.tab-content');
+		const manualVerifyBtn = document.getElementById('manual-verify-btn');
+		const qrInput = document.getElementById('qr-token') as HTMLInputElement;
+		const resultOverlay = document.getElementById('result-overlay');
+		const closeResultBtn = document.getElementById('close-result');
 
-	tabs.forEach(tab => {
-		tab.addEventListener('click', () => {
-			const target = (tab as HTMLElement).dataset.tab;
-			tabs.forEach(t => t.classList.remove('active'));
-			tab.classList.add('active');
-			tabContents.forEach(c => {
-				c.classList.remove('active');
-				if (c.id === `${target}-tab`) c.classList.add('active');
+		tabs.forEach(tab => {
+			tab.addEventListener('click', () => {
+				const target = (tab as HTMLElement).dataset.tab;
+				tabs.forEach(t => t.classList.remove('active'));
+				tab.classList.add('active');
+				tabContents.forEach(c => {
+					c.classList.remove('active');
+					if (c.id === `${target}-tab`) c.classList.add('active');
+				});
 			});
 		});
-	});
 
-	let isVerifying = false;
+		let isVerifying = false;
 
-	async function verifyToken(token: string) {
-		if (isVerifying) return;
-		isVerifying = true;
+		async function verifyToken(token: string) {
+			if (isVerifying) return;
+			isVerifying = true;
 
-		try {
-			const response = await fetch('/api/staff/verify-qr', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ token })
-			});
-			const result = await response.json();
-			showResult(result);
-		} catch (error) {
-			console.error('Verification failed', error);
-		} finally {
-			isVerifying = false;
+			try {
+				const response = await fetch('/api/staff/verify-qr', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ token })
+				});
+				const result = await response.json();
+				showResult(result);
+			} catch (error) {
+				console.error('Verification failed', error);
+			} finally {
+				isVerifying = false;
+			}
 		}
+
+		function showResult(result: any) {
+			const title = document.getElementById('result-title');
+			const details = document.getElementById('result-details');
+			const icon = document.getElementById('result-icon');
+			const card = document.querySelector('.result-card');
+
+			if (result.success) {
+				if (title) title.textContent = 'Access Granted';
+				card?.classList.add('success');
+				card?.classList.remove('error');
+				if (icon) icon.textContent = '✅';
+				if (details) {
+					details.innerHTML = `
+						<p><strong>Name:</strong> ${result.member.name}</p>
+						<p><strong>Plan:</strong> ${result.member.plan}</p>
+						<p><strong>Expiry:</strong> ${new Date(result.member.expiry).toLocaleDateString()}</p>
+					`;
+				}
+			} else {
+				if (title) title.textContent = 'Access Denied';
+				card?.classList.add('error');
+				card?.classList.remove('success');
+				if (icon) icon.textContent = '❌';
+				if (details) details.innerHTML = `<p>${result.message}</p>`;
+			}
+
+			resultOverlay?.classList.remove('hidden');
+		}
+
+		// Handle QR scan event from QRScanner component
+		const handleScan = (e: any) => {
+			verifyToken(e.detail.token);
+		};
+		window.addEventListener('qr-scanned', handleScan);
+
+		manualVerifyBtn?.addEventListener('click', () => {
+			const token = qrInput?.value.trim();
+			if (token) {
+				manualVerifyBtn.classList.add('loading');
+				verifyToken(token).finally(() => {
+					manualVerifyBtn.classList.remove('loading');
+				});
+			}
+		});
+
+		closeResultBtn?.addEventListener('click', () => {
+			resultOverlay?.classList.add('hidden');
+		});
+
+		// Cleanup function for View Transitions
+		document.addEventListener('astro:after-swap', () => {
+			window.removeEventListener('qr-scanned', handleScan);
+		}, { once: true });
 	}
 
-	function showResult(result: any) {
-		const title = document.getElementById('result-title');
-		const details = document.getElementById('result-details');
-		const icon = document.getElementById('result-icon');
-		const card = document.querySelector('.result-card');
-
-		if (result.success) {
-			title!.textContent = 'Access Granted';
-			card!.classList.add('success');
-			card!.classList.remove('error');
-			icon!.textContent = '✅';
-			details!.innerHTML = `
-				<p><strong>Name:</strong> ${result.member.name}</p>
-				<p><strong>Plan:</strong> ${result.member.plan}</p>
-				<p><strong>Expiry:</strong> ${new Date(result.member.expiry).toLocaleDateString()}</p>
-			`;
-		} else {
-			title!.textContent = 'Access Denied';
-			card!.classList.add('error');
-			card!.classList.remove('success');
-			icon!.textContent = '❌';
-			details!.innerHTML = `<p>${result.message}</p>`;
-		}
-
-		resultOverlay!.classList.remove('hidden');
-	}
-
-	window.addEventListener('qr-scanned', (e: any) => {
-		verifyToken(e.detail.token);
-	});
-
-	manualVerifyBtn?.addEventListener('click', () => {
-		const token = qrInput.value.trim();
-		if (token) {
-			manualVerifyBtn.classList.add('loading');
-			verifyToken(token).finally(() => {
-				manualVerifyBtn.classList.remove('loading');
-			});
-		}
-	});
-
-	closeResultBtn?.addEventListener('click', () => {
-		resultOverlay!.classList.add('hidden');
-	});
+	document.addEventListener('astro:page-load', init);
 </script>
 
 <style>
