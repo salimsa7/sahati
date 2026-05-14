@@ -71,50 +71,10 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 							<hr class="sub-divider" />
 							<div class="detail-row"><span class="detail-label">Plan</span><span class="detail-value">${planLabel}</span></div>
 							<div class="detail-row"><span class="detail-label">Expiry</span><span class="detail-value">${expiry}</span></div>
-							<div class="qr-status-section">
-								<span class="detail-label">QR</span>
-								${hasQR 
-									? '<span class="qr-found">✓ Available</span>' 
-									: `<button class="btn primary sm-btn generate-qr-btn" data-id="${member.id}">Generate QR</button>`
-								}
-							</div>
 						</div>
 					</div>
 				`;
 			}).join('');
-
-			// Add event listeners to newly created buttons
-			resultsContainer.querySelectorAll('.generate-qr-btn').forEach(btn => {
-				btn.addEventListener('click', async (e) => {
-					const target = e.target as HTMLButtonElement;
-					const userId = target.getAttribute('data-id');
-					if (!userId) return;
-
-					target.disabled = true;
-					target.innerText = 'Generating...';
-
-					try {
-						const response = await fetch('/api/staff/generate-qr', {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({ userId })
-						});
-						const data = await response.json();
-						if (data.success) {
-							target.parentElement!.innerHTML = '<span class="qr-found">Generated!</span>';
-							window.showToast('QR token generated successfully');
-						} else {
-							window.showToast('Failed to generate QR: ' + data.error, 'error');
-							target.disabled = false;
-							target.innerText = 'Generate Missing QR';
-						}
-					} catch (err) {
-						window.showToast('An error occurred during QR generation.', 'error');
-						target.disabled = false;
-						target.innerText = 'Generate Missing QR';
-					}
-				});
-			});
 		}
 
 		searchBtn?.addEventListener('click', performSearch);
@@ -214,20 +174,6 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 		margin: 0.85rem 0 0.6rem;
 		border: none;
 		border-top: 1px dashed rgba(255,255,255,0.08);
-	}
-
-	.qr-status-section {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.85rem;
-		margin-top: 0.5rem;
-	}
-
-	.qr-found {
-		color: #81c784;
-		font-weight: 600;
-		font-size: 0.82rem;
 	}
 
 	.placeholder-msg {

@@ -44,6 +44,12 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (profileError) return new Response(profileError.message, { status: 500 });
 
+  // 3. Generate permanent QR token
+  await supabaseAdmin.from('qr_tokens').insert({
+    user_id: authData.user.id,
+    token: crypto.randomUUID()
+  });
+
   return new Response(JSON.stringify({ success: true }), { status: 201 });
 };
 

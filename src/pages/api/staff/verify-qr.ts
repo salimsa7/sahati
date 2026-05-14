@@ -1,11 +1,24 @@
 import type { APIRoute } from 'astro';
-import { supabaseAdmin } from '../../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../../lib/supabase';
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   const { token } = await request.json();
 
   if (!token) {
     return new Response(JSON.stringify({ error: 'Token is required' }), { status: 400 });
+  }
+
+  // Get authenticated staff member ID
+  const accessToken = cookies.get('sb-access-token')?.value;
+  let staffId: string | null = null;
+
+  if (accessToken) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (!authError && user) {
+      staffId = user.id;
+    } else if (authError) {
+      console.error('Auth error in verify-qr:', authError.message);
+    }
   }
 
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token);
@@ -25,6 +38,7 @@ export const POST: APIRoute = async ({ request }) => {
     await supabaseAdmin.from('access_logs').insert({
       scanned_token: token,
       result: 'denied',
+      scanned_by: staffId,
       scanned_at: new Date().toISOString()
     });
     return new Response(JSON.stringify({ success: false, message: 'Invalid Token' }), { status: 200 });
@@ -45,32 +59,52 @@ export const POST: APIRoute = async ({ request }) => {
       user_id: userId,
       scanned_token: token,
       result: 'denied',
+      scanned_by: staffId,
       scanned_at: new Date().toISOString()
     });
     return new Response(JSON.stringify({ success: false, message: 'No Subscription Found' }), { status: 200 });
   }
 
-  const isActive = subscription.status === 'active' && new Date(subscription.end_date) > new Date();
+  // Robust date comparison: compare YYYY-MM-DD strings to avoid timezone issues
+  const todayStr = new Date().toISOString().split('T')[0];
+  const expiryStr = subscription.end_date; // Assuming YYYY-MM-DD from Postgres DATE field
+  
+  const isNotExpired = expiryStr >= todayStr;
+  const isActive = subscription.status === 'active' && isNotExpired;
 
   // 3. Log attempt
   await supabaseAdmin.from('access_logs').insert({
     user_id: userId,
     scanned_token: token,
     result: isActive ? 'granted' : 'denied',
+    scanned_by: staffId,
     scanned_at: new Date().toISOString()
   });
 
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
 
   const user = Array.isArray(subscription.users) ? subscription.users[0] : subscription.users;
+  
+  // Format date: May 01, 2026
+  const formattedExpiry = new Date(subscription.end_date).toLocaleDateString('en-US', {
+    month: 'long',
+    day: '2-digit',
+    year: 'numeric'
+  });
+
+  let message = 'Access Granted';
+  if (!isActive) {
+    message = subscription.status !== 'active' ? 'Subscription Inactive' : 'Subscription Expired';
+  }
 
   return new Response(JSON.stringify({
     success: isActive,
     member: {
       name: user?.name,
       plan: capitalize(subscription.plan),
-      expiry: subscription.end_date
+      expiry: formattedExpiry
     },
-    message: isActive ? 'Access Granted' : 'Access Denied (Expired)'
+    message: message
   }), { status: 200 });
 };
+

@@ -2,13 +2,13 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabase';
 
 export const POST: APIRoute = async ({ request }) => {
-  const { memberId, plan, endDate } = await request.json();
+  const { memberId, plan, endDate, status } = await request.json();
 
   if (!memberId || !plan || !endDate) {
     return new Response(JSON.stringify({ error: 'Member ID, plan, and end date are required' }), { status: 400 });
   }
 
-  const normalizedStatus = 'active';
+  const normalizedStatus = status || 'active';
   const normalizedPlan = plan.toLowerCase();
 
   // 1. Check if subscription exists using user_id
@@ -51,15 +51,18 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: resultError.message }), { status: 500 });
   }
 
-  // Regenerate QR token so old QR becomes invalid
-  await supabaseAdmin.from('qr_tokens').delete().eq('user_id', memberId);
-  const { error: qrError } = await supabaseAdmin.from('qr_tokens').insert({
-    user_id: memberId,
-    token: crypto.randomUUID()
-  });
+  // Ensure permanent QR token exists (create if missing, do not regenerate)
+  const { data: qrExists } = await supabaseAdmin
+    .from('qr_tokens')
+    .select('id')
+    .eq('user_id', memberId)
+    .maybeSingle();
 
-  if (qrError) {
-    return new Response(JSON.stringify({ error: 'Subscription renewed but QR regeneration failed: ' + qrError.message }), { status: 500 });
+  if (!qrExists) {
+    await supabaseAdmin.from('qr_tokens').insert({
+      user_id: memberId,
+      token: crypto.randomUUID()
+    });
   }
 
   return new Response(JSON.stringify({ success: true }), { status: 200 });

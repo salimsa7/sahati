@@ -1,12 +1,16 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import Layout from "../../layouts/Layout.astro";
 ---
 
 <Layout title="Create Account | Sahati Gym">
 	<main class="login-container">
 		<div class="login-box">
 			<div class="logo-container">
-				<img src="/logoWithText.svg" alt="Sahati Gym" class="login-logo" />
+				<img
+					src="/logoWithText.svg"
+					alt="Sahati Gym"
+					class="login-logo"
+				/>
 			</div>
 			<h1>Create Member Account</h1>
 			<form action="/api/auth/register" method="POST" id="register-form">
@@ -27,12 +31,24 @@ import Layout from '../../layouts/Layout.astro';
 
 				<div class="form-group">
 					<label for="password">Password</label>
-					<input type="password" id="password" name="password" required minlength="6" />
+					<input
+						type="password"
+						id="password"
+						name="password"
+						required
+						minlength="6"
+					/>
 				</div>
 
 				<div class="form-group">
 					<label for="confirmPassword">Confirm Password</label>
-					<input type="password" id="confirmPassword" name="confirmPassword" required minlength="6" />
+					<input
+						type="password"
+						id="confirmPassword"
+						name="confirmPassword"
+						required
+						minlength="6"
+					/>
 				</div>
 
 				<button type="submit" class="btn">Register</button>
@@ -43,61 +59,113 @@ import Layout from '../../layouts/Layout.astro';
 			</div>
 		</div>
 	</main>
+
+	<!-- Success Modal -->
+	<div id="success-modal" class="modal hidden">
+		<div class="modal-content success-box">
+			<h2>Registration Successful!</h2>
+			<div class="success-message">
+				<p>Your account has been created successfully.</p>
+				<div class="instruction-card">
+					<p>
+						To activate your subscription and access your QR code,
+						please contact gym administration:
+					</p>
+					<p class="contact-num">
+						<a href="tel:+96896535333">+968 96535333</a>
+					</p>
+				</div>
+			</div>
+			<div class="modal-actions">
+				<button id="close-success-modal" class="btn primary"
+					>Go to Login</button
+				>
+			</div>
+		</div>
+	</div>
 </Layout>
 
 <script>
 	function init() {
-		const form = document.getElementById('register-form') as HTMLFormElement;
+		const form = document.getElementById(
+			"register-form"
+		) as HTMLFormElement;
 		const submitBtn = form?.querySelector('button[type="submit"]');
+		const successModal = document.getElementById("success-modal");
+		const closeSuccessBtn = document.getElementById("close-success-modal");
 
 		// Check for error in URL (fallback for direct redirects if any remain)
 		const urlParams = new URLSearchParams(window.location.search);
-		const error = urlParams.get('error');
+		const error = urlParams.get("error");
 		if (error) {
-			window.showToast(error, 'error');
+			window.showToast(error, "error");
 			// Clear the error from URL without refreshing
-			window.history.replaceState({}, document.title, window.location.pathname);
+			window.history.replaceState(
+				{},
+				document.title,
+				window.location.pathname
+			);
 		}
 
-		form?.addEventListener('submit', async (e) => {
+		form?.addEventListener("submit", async (e) => {
 			e.preventDefault();
-			const password = (document.getElementById('password') as HTMLInputElement).value;
-			const confirmPassword = (document.getElementById('confirmPassword') as HTMLInputElement).value;
+			const password = (
+				document.getElementById("password") as HTMLInputElement
+			).value;
+			const confirmPassword = (
+				document.getElementById("confirmPassword") as HTMLInputElement
+			).value;
 
 			if (password !== confirmPassword) {
-				window.showToast('Passwords do not match', 'error');
+				window.showToast("Passwords do not match", "error");
 				return;
 			}
 
-			submitBtn?.classList.add('loading');
+			submitBtn?.classList.add("loading");
 
 			const formData = new FormData(form);
 			try {
 				const response = await fetch(form.action, {
-					method: 'POST',
-					body: formData
+					method: "POST",
+					body: formData,
 				});
 
 				if (response.ok) {
-					if (response.redirected) {
-						window.location.href = response.url;
-					} else {
-						window.location.href = '/member/dashboard?registered=true';
-					}
+					// Store the redirect URL
+					const redirectUrl = response.redirected
+						? response.url
+						: "/member/dashboard?registered=true";
+
+					// Show success modal
+					successModal?.classList.remove("hidden");
+
+					closeSuccessBtn?.addEventListener(
+						"click",
+						() => {
+							window.location.href = redirectUrl;
+						},
+						{ once: true }
+					);
 				} else {
 					const errorText = await response.text();
-					window.showToast(errorText || 'Registration failed', 'error');
+					window.showToast(
+						errorText || "Registration failed",
+						"error"
+					);
 				}
 			} catch (err) {
-				window.showToast('An error occurred during registration', 'error');
+				window.showToast(
+					"An error occurred during registration",
+					"error"
+				);
 			} finally {
-				submitBtn?.classList.remove('loading');
+				submitBtn?.classList.remove("loading");
 			}
 		});
 	}
 
 	// Support View Transitions
-	document.addEventListener('astro:page-load', init);
+	document.addEventListener("astro:page-load", init);
 </script>
 
 <style>
@@ -179,6 +247,35 @@ import Layout from '../../layouts/Layout.astro';
 	}
 
 	.back-link a {
+		text-decoration: none;
+	}
+
+	/* Success Modal Styles */
+	.success-box {
+		text-align: center;
+		max-width: 400px;
+	}
+
+	.success-message {
+		margin: 1.5rem 0;
+	}
+
+	.instruction-card {
+		background: rgba(0, 0, 0, 0.2);
+		padding: 1.25rem;
+		border-radius: 8px;
+		margin-top: 1rem;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.contact-num {
+		font-size: 1.25rem;
+		font-weight: 700;
+		margin-top: 0.75rem;
+	}
+
+	.contact-num a {
+		color: var(--color-button);
 		text-decoration: none;
 	}
 </style>

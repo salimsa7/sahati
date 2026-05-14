@@ -1,21 +1,23 @@
 ---
-import MemberLayout from '../../layouts/MemberLayout.astro';
-import { supabase } from '../../lib/supabase';
-import QRCode from 'qrcode';
+import MemberLayout from "../../layouts/MemberLayout.astro";
+import { supabase } from "../../lib/supabase";
+import QRCode from "qrcode";
 
-const { data: { user } } = await supabase.auth.getUser();
-if (!user) return Astro.redirect('/member/login');
+const {
+	data: { user },
+} = await supabase.auth.getUser();
+if (!user) return Astro.redirect("/member/login");
 
 const { data: profile } = await supabase
-	.from('users')
-	.select('*')
-	.eq('id', user.id)
+	.from("users")
+	.select("*")
+	.eq("id", user.id)
 	.single();
 
 const { data: qrData, error: qrFetchError } = await supabase
-	.from('qr_tokens')
-	.select('token')
-	.eq('user_id', user.id)
+	.from("qr_tokens")
+	.select("token")
+	.eq("user_id", user.id)
 	.maybeSingle();
 
 let qrToken = qrData?.token;
@@ -24,27 +26,27 @@ let qrToken = qrData?.token;
 if (!qrToken && !qrFetchError) {
 	const newToken = crypto.randomUUID();
 	const { data: created, error: createError } = await supabase
-		.from('qr_tokens')
+		.from("qr_tokens")
 		.insert({
 			user_id: user.id,
-			token: newToken
+			token: newToken,
 		})
-		.select('token')
+		.select("token")
 		.single();
-	
+
 	if (!createError && created) {
 		qrToken = created.token;
 	}
 }
 
-let qrCodeUrl = '';
+let qrCodeUrl = "";
 if (qrToken) {
 	qrCodeUrl = await QRCode.toDataURL(qrToken, {
 		color: {
-			dark: '#124e66',
-			light: '#d3d9d4'
+			dark: "#124e66",
+			light: "#d3d9d4",
 		},
-		width: 300
+		width: 300,
 	});
 }
 ---
@@ -55,12 +57,20 @@ if (qrToken) {
 		<p>Show this code to the gym staff or scan it at the entrance.</p>
 
 		<div class="qr-box">
-			{qrCodeUrl ? (
-				<img src={qrCodeUrl} alt="My QR Code" class="qr-image" />
-			) : (
-				<div class="error">QR Code not found. Please contact staff.</div>
-			)}
-			
+			{
+				qrCodeUrl ? (
+					<img src={qrCodeUrl} alt="My QR Code" class="qr-image" />
+				) : (
+					<div class="error">
+						QR Code not found. please contact staff through this
+						number: <br />
+						<b>
+							<a href="tel:+96896535333">+968 96535333</a>
+						</b>
+					</div>
+				)
+			}
+
 			<div class="member-info">
 				<div class="name">{profile?.name}</div>
 				<div class="id">Member ID: {user.id.substring(0, 8)}</div>

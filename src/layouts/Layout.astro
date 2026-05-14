@@ -1,6 +1,5 @@
 ---
 import { ClientRouter } from 'astro:transitions';
-import Snackbar from '../components/Snackbar.astro';
 
 interface Props {
 	title?: string;
@@ -25,17 +24,80 @@ const { title = 'Sahati Gym' } = Astro.props;
 	</head>
 	<body>
 		<slot />
+		
+		<!-- Global Toast Container -->
 		<div id="toast" class="toast hidden"></div>
 
+		<!-- Global Confirmation Modal -->
+		<div id="confirm-modal" class="modal hidden">
+			<div class="modal-content confirmation-modal">
+				<h2 id="confirm-title">Confirm Action</h2>
+				<p id="confirm-message">Are you sure you want to proceed?</p>
+				<div class="modal-actions">
+					<button type="button" id="confirm-cancel" class="btn secondary">Cancel</button>
+					<button type="button" id="confirm-ok" class="btn danger">Confirm</button>
+				</div>
+			</div>
+		</div>
+
 		<script is:inline>
+			// Global Toast Function
 			window.showToast = (message, type = 'success') => {
 				const toast = document.getElementById('toast');
 				if (!toast) return;
+				
+				// Clear any existing timeout
+				if (window.toastTimeout) clearTimeout(window.toastTimeout);
+				
 				toast.textContent = message;
 				toast.className = `toast ${type}`;
-				setTimeout(() => {
-					toast.className = 'toast hidden';
-				}, 3500);
+				toast.classList.remove('hidden');
+				
+				window.toastTimeout = setTimeout(() => {
+					toast.classList.add('hidden');
+				}, 4000);
+			};
+
+			// Global Confirmation Modal Function
+			window.confirmAction = (options) => {
+				const modal = document.getElementById('confirm-modal');
+				const titleEl = document.getElementById('confirm-title');
+				const messageEl = document.getElementById('confirm-message');
+				const okBtn = document.getElementById('confirm-ok');
+				const cancelBtn = document.getElementById('confirm-cancel');
+				
+				if (!modal || !titleEl || !messageEl || !okBtn || !cancelBtn) return;
+				
+				titleEl.textContent = options.title || 'Confirm Action';
+				messageEl.textContent = options.message || 'Are you sure?';
+				okBtn.textContent = options.okText || 'Confirm';
+				cancelBtn.textContent = options.cancelText || 'Cancel';
+				
+				// Set button color
+				okBtn.className = `btn ${options.type === 'danger' ? 'danger' : 'primary'}`;
+				
+				modal.classList.remove('hidden');
+				
+				return new Promise((resolve) => {
+					const handleOk = () => {
+						cleanup();
+						resolve(true);
+					};
+					
+					const handleCancel = () => {
+						cleanup();
+						resolve(false);
+					};
+					
+					const cleanup = () => {
+						okBtn.removeEventListener('click', handleOk);
+						cancelBtn.removeEventListener('click', handleCancel);
+						modal.classList.add('hidden');
+					};
+					
+					okBtn.addEventListener('click', handleOk);
+					cancelBtn.addEventListener('click', handleCancel);
+				});
 			};
 		</script>
 	</body>
@@ -205,6 +267,24 @@ const { title = 'Sahati Gym' } = Astro.props;
 		font-size: 1.2rem;
 	}
 
+	.confirmation-modal {
+		max-width: 400px;
+		padding: 1.75rem;
+	}
+
+	.confirmation-modal h2 {
+		margin-bottom: 0.75rem;
+		font-size: 1.3rem;
+		color: #fff;
+	}
+
+	.confirmation-modal p {
+		margin-bottom: 2rem;
+		font-size: 0.95rem;
+		line-height: 1.5;
+		color: var(--color-text-muted);
+	}
+
 	.modal-actions {
 		display: flex;
 		justify-content: flex-end;
@@ -285,24 +365,29 @@ const { title = 'Sahati Gym' } = Astro.props;
 	.toast {
 		position: fixed;
 		bottom: 2rem;
-		right: 2rem;
+		left: 50%;
+		transform: translateX(-50%);
 		padding: 0.85rem 1.6rem;
 		border-radius: var(--radius-md);
 		font-weight: 600;
 		font-size: 0.88rem;
 		z-index: 2000;
-		box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-		animation: slideUp 0.22s ease;
+		box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+		animation: slideUp 0.22s ease-out;
+		min-width: 300px;
+		text-align: center;
 	}
-	.toast.success { background: #2e7d32; color: #fff; }
-	.toast.error   { background: #c62828; color: #fff; }
+	.toast.success { background: #2e7d32; color: #fff; border-left: 4px solid #4caf50; }
+	.toast.error   { background: #c62828; color: #fff; border-left: 4px solid #ef5350; }
+	.toast.info    { background: #1565c0; color: #fff; border-left: 4px solid #42a5f5; }
 
 	@keyframes slideUp {
-		from { opacity: 0; transform: translateY(10px); }
-		to   { opacity: 1; transform: translateY(0); }
+		from { opacity: 0; transform: translate(-50%, 20px); }
+		to   { opacity: 1; transform: translate(-50%, 0); }
 	}
 
 	@keyframes spin {
 		to { transform: rotate(360deg); }
 	}
 </style>
+

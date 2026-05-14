@@ -46,14 +46,23 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 			</div>
 			<div id="selected-member-info" class="member-info-box"></div>
 
-			<div class="form-group">
-				<label for="plan-select">Plan</label>
-				<select id="plan-select">
-					<option value="Lite">Lite – 1 Month</option>
-					<option value="Plus">Plus – 3 Months</option>
-					<option value="Pro">Pro – 6 Months</option>
-					<option value="Elite">Elite – 1 Year</option>
-				</select>
+			<div class="form-row">
+				<div class="form-group">
+					<label for="plan-select">Plan</label>
+					<select id="plan-select">
+						<option value="Lite">Lite – 1 Month</option>
+						<option value="Plus">Plus – 3 Months</option>
+						<option value="Pro">Pro – 6 Months</option>
+						<option value="Elite">Elite – 1 Year</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="status-select">Status</label>
+					<select id="status-select">
+						<option value="active">Active</option>
+						<option value="expired">Inactive/Expired</option>
+					</select>
+				</div>
 			</div>
 			<div class="form-group">
 				<label for="end-date">New End Date</label>
@@ -77,6 +86,7 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 		const cancelBtn   = document.getElementById('cancel-btn');
 		const renewBtn    = document.getElementById('renew-btn');
 		const planSelect  = document.getElementById('plan-select') as HTMLSelectElement;
+		const statusSelect= document.getElementById('status-select') as HTMLSelectElement;
 		const endDateInput= document.getElementById('end-date')   as HTMLInputElement;
 
 		let members: any[] = [];
@@ -100,8 +110,8 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 			if (!sub) return '<span class="badge badge-warning">No Sub</span>';
 			const today = new Date();
 			const end   = new Date(sub.end_date);
-			const active= end >= today;
-			return active
+			const isExpired = end < today || sub.status?.toLowerCase() === 'expired';
+			return !isExpired
 				? '<span class="badge badge-success">Active</span>'
 				: '<span class="badge badge-danger">Expired</span>';
 		}
@@ -172,6 +182,15 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 				const planVal = sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1);
 				if ([...planSelect.options].some(o => o.value === planVal)) planSelect.value = planVal;
 			}
+			if (sub?.status && statusSelect) {
+				const statusVal = sub.status.toLowerCase();
+				if ([...statusSelect.options].some(o => o.value === statusVal)) {
+					statusSelect.value = statusVal;
+				}
+			} else if (statusSelect) {
+				statusSelect.value = 'active';
+			}
+
 			if (endDateInput && planSelect) {
 				endDateInput.value = calculateExpiryDate(planSelect.value);
 			}
@@ -186,6 +205,7 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 
 		renewBtn?.addEventListener('click', async () => {
 			const plan    = planSelect?.value || 'Lite';
+			const status  = statusSelect?.value || 'active';
 			const endDate = endDateInput?.value;
 			if (!endDate) { window.showToast('Please select an end date.', 'error'); return; }
 
@@ -194,7 +214,7 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 				const res = await fetch('/api/staff/renew-subscription', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ memberId: selectedMemberId, plan, endDate })
+					body: JSON.stringify({ memberId: selectedMemberId, plan, endDate, status })
 				});
 				const result = await res.json();
 				if (result.success) {

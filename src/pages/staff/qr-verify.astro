@@ -92,7 +92,7 @@ import QRScanner from '../../components/QRScanner.astro';
 					details.innerHTML = `
 						<p><strong>Name:</strong> ${result.member.name}</p>
 						<p><strong>Plan:</strong> ${result.member.plan}</p>
-						<p><strong>Expiry:</strong> ${new Date(result.member.expiry).toLocaleDateString()}</p>
+						<p><strong>Expiry:</strong> ${result.member.expiry}</p>
 					`;
 				}
 			} else {

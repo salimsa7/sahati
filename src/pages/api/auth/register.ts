@@ -45,6 +45,12 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return new Response(profileError.message, { status: 500 });
   }
 
+  // 3. Generate permanent QR token
+  await supabaseAdmin.from('qr_tokens').insert({
+    user_id: user.id,
+    token: crypto.randomUUID()
+  });
+
   // Set cookies for SSR
   if (session) {
     cookies.set('sb-access-token', session.access_token, {

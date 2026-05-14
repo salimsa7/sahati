@@ -92,14 +92,19 @@ export const PUT: APIRoute = async ({ request }) => {
 
   if (resultError) return new Response(resultError.message, { status: 500 });
 
-  // Regenerate QR token so old QR becomes invalid
-  await supabaseAdmin.from('qr_tokens').delete().eq('user_id', member_id);
-  const { error: qrError } = await supabaseAdmin.from('qr_tokens').insert({
-    user_id: member_id,
-    token: crypto.randomUUID()
-  });
+  // Ensure permanent QR token exists (create if missing, do not regenerate)
+  const { data: qrExists } = await supabaseAdmin
+    .from('qr_tokens')
+    .select('id')
+    .eq('user_id', member_id)
+    .maybeSingle();
 
-  if (qrError) return new Response('Subscription saved but QR regeneration failed: ' + qrError.message, { status: 500 });
+  if (!qrExists) {
+    await supabaseAdmin.from('qr_tokens').insert({
+      user_id: member_id,
+      token: crypto.randomUUID()
+    });
+  }
 
   return new Response(JSON.stringify({ success: true }), { status: 200 });
 };
