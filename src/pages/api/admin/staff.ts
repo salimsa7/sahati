@@ -49,6 +49,20 @@ export const PUT: APIRoute = async ({ request }) => {
   return new Response(JSON.stringify({ success: true }), { status: 200 });
 };
 
+export const PATCH: APIRoute = async ({ request }) => {
+  const { id, password } = await request.json();
+
+  if (!id || !password) {
+    return new Response('ID and password are required', { status: 400 });
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(id, { password });
+
+  if (error) return new Response(error.message, { status: 500 });
+
+  return new Response(JSON.stringify({ success: true }), { status: 200 });
+};
+
 export const DELETE: APIRoute = async ({ url }) => {
   const id = url.searchParams.get('id');
   if (!id) return new Response('ID required', { status: 400 });

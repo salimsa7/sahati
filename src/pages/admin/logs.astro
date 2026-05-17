@@ -88,19 +88,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 				const granted = l.result === 'granted';
 				const badgeClass = granted ? 'badge-success' : 'badge-danger';
 				const badgeLabel = granted ? '✓ Granted' : '✗ Denied';
-				const memberId   = l.user_id || null;
+				const memberId   = l.member_id || null;
 				return `
 					<tr>
 						<td>
 							<div class="member-cell">
-								<strong>${l.users?.name || '<span class="unknown">Unknown</span>'}</strong>
+								<strong>${l.member_name || '<span class="unknown">Unknown</span>'}</strong>
 							</div>
 						</td>
 						<td>
 							<code class="id-cell" title="${memberId || 'N/A'}">${memberId ? truncateId(memberId) : '—'}</code>
 						</td>
 						<td class="ts-cell">${formatTs(l.scanned_at)}</td>
-						<td class="staff-cell">${l.staff?.name || '—'}</td>
+						<td class="staff-cell">${l.scanned_by_name || '—'}</td>
 						<td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
 					</tr>
 				`;

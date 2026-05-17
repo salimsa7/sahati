@@ -69,6 +69,24 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 			</form>
 		</div>
 	</div>
+	<!-- Reset Password Modal -->
+	<div id="reset-modal" class="modal hidden">
+		<div class="modal-content">
+			<h2>Reset Password</h2>
+			<p id="reset-staff-info" class="sub-text" style="margin-bottom: 1.5rem;"></p>
+			<form id="reset-form">
+				<input type="hidden" id="reset-staff-id" name="id" />
+				<div class="form-group">
+					<label for="new-password">New Password</label>
+					<input type="password" id="new-password" name="password" placeholder="Min. 6 characters" minlength="6" required />
+				</div>
+				<div class="modal-actions">
+					<button type="button" id="cancel-reset" class="btn secondary">Cancel</button>
+					<button type="submit" class="btn primary">Reset Password</button>
+				</div>
+			</form>
+		</div>
+	</div>
 </AdminLayout>
 
 <script>
@@ -82,6 +100,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 		const cancelBtn   = document.getElementById('cancel-modal');
 		const form        = document.getElementById('staff-form') as HTMLFormElement;
 		const pwdGroup    = document.getElementById('password-group');
+
+		// Reset Modal Elements
+		const resetModal     = document.getElementById('reset-modal');
+		const resetForm      = document.getElementById('reset-form') as HTMLFormElement;
+		const cancelResetBtn = document.getElementById('cancel-reset');
+		const resetInfo      = document.getElementById('reset-staff-info');
+		const resetIdInput   = document.getElementById('reset-staff-id') as HTMLInputElement;
 
 		function formatDate(date: string) {
 			if (!date) return '—';
@@ -119,6 +144,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 					<td>
 						<div class="action-group">
 							<button class="btn-action btn-edit edit-btn" data-id="${s.id}">Edit</button>
+							<button class="btn-action btn-reset reset-btn" data-id="${s.id}">Reset</button>
 							<button class="btn-action btn-delete delete-btn" data-id="${s.id}">Delete</button>
 						</div>
 					</td>
@@ -138,7 +164,49 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 					if (id) handleDelete(id, e.currentTarget as HTMLElement);
 				});
 			});
+
+			tableBody.querySelectorAll('.reset-btn').forEach(btn => {
+				btn.addEventListener('click', e => {
+					const id = (e.currentTarget as HTMLElement).dataset.id;
+					if (id) handleReset(id);
+				});
+			});
 		}
+
+		async function handleReset(id: string) {
+			const s = staffMembers.find(x => x.id === id);
+			if (!s || !resetModal || !resetInfo) return;
+
+			resetIdInput.value = s.id;
+			resetInfo.textContent = `Set a new password for ${s.name} (${s.email})`;
+			resetForm.reset();
+			resetModal.classList.remove('hidden');
+		}
+
+		resetForm?.addEventListener('submit', async e => {
+			e.preventDefault();
+			const data      = Object.fromEntries(new FormData(resetForm).entries());
+			const submitBtn = resetForm.querySelector('button[type="submit"]');
+			
+			submitBtn?.classList.add('loading');
+			try {
+				const res = await fetch('/api/admin/staff', {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(data)
+				});
+				if (res.ok) {
+					resetModal?.classList.add('hidden');
+					window.showToast('✓ Password reset successfully.', 'success');
+				} else {
+					window.showToast('Reset failed: ' + await res.text(), 'error');
+				}
+			} finally {
+				submitBtn?.classList.remove('loading');
+			}
+		});
+
+		cancelResetBtn?.addEventListener('click', () => resetModal?.classList.add('hidden'));
 
 		function openEditModal(id: string) {
 			const s = staffMembers.find(x => x.id === id);
@@ -284,6 +352,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 		border-color: rgba(69,123,157,0.35);
 	}
 	.btn-edit:hover { background: rgba(69,123,157,0.38); }
+
+	.btn-reset {
+		background: rgba(255,183,77,0.15);
+		color: #ffb74d;
+		border-color: rgba(255,183,77,0.3);
+	}
+	.btn-reset:hover { background: rgba(255,183,77,0.3); }
 
 	.btn-delete {
 		background: rgba(230,57,70,0.15);

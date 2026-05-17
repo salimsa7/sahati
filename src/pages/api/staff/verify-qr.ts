@@ -8,19 +8,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(JSON.stringify({ error: 'Token is required' }), { status: 400 });
   }
 
-  // Get authenticated staff member ID
-  const accessToken = cookies.get('sb-access-token')?.value;
-  let staffId: string | null = null;
-
-  if (accessToken) {
-    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
-    if (!authError && user) {
-      staffId = user.id;
-    } else if (authError) {
-      console.error('Auth error in verify-qr:', authError.message);
-    }
-  }
-
+  // Get authenticated staff member ID using the session set by middleware
+  const { data: { user: staffUser } } = await supabase.auth.getUser();
+  const staffId = staffUser?.id || null;
+  
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token);
   if (!isUUID) {
     return new Response(JSON.stringify({ success: false, message: 'Invalid Token Format' }), { status: 200 });
@@ -35,12 +26,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   if (qrError || !qrData) {
     // Log failed attempt
-    await supabaseAdmin.from('access_logs').insert({
+    const { error: logError } = await supabaseAdmin.from('access_logs').insert({
       scanned_token: token,
       result: 'denied',
       scanned_by: staffId,
       scanned_at: new Date().toISOString()
     });
+    if (logError) console.error('Error logging invalid token scan:', logError.message);
+
     return new Response(JSON.stringify({ success: false, message: 'Invalid Token' }), { status: 200 });
   }
 
@@ -55,13 +48,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   if (subError || !subscription) {
      // Log failed attempt
-     await supabaseAdmin.from('access_logs').insert({
+     const { error: logError } = await supabaseAdmin.from('access_logs').insert({
       user_id: userId,
       scanned_token: token,
       result: 'denied',
       scanned_by: staffId,
       scanned_at: new Date().toISOString()
     });
+    if (logError) console.error('Error logging missing sub scan:', logError.message);
+
     return new Response(JSON.stringify({ success: false, message: 'No Subscription Found' }), { status: 200 });
   }
 
@@ -73,13 +68,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const isActive = subscription.status === 'active' && isNotExpired;
 
   // 3. Log attempt
-  await supabaseAdmin.from('access_logs').insert({
+  const { error: logError } = await supabaseAdmin.from('access_logs').insert({
     user_id: userId,
     scanned_token: token,
     result: isActive ? 'granted' : 'denied',
     scanned_by: staffId,
     scanned_at: new Date().toISOString()
   });
+  if (logError) console.error('Error logging scan:', logError.message);
 
   const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
 

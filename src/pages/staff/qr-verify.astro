@@ -32,6 +32,14 @@ import QRScanner from '../../components/QRScanner.astro';
 				<button id="close-result" class="dismiss-btn">Dismiss</button>
 			</div>
 		</div>
+
+		<div id="processing-overlay" class="result-overlay hidden">
+			<div class="processing-card">
+				<div class="spinner"></div>
+				<h2>Processing...</h2>
+				<p>Verifying member access</p>
+			</div>
+		</div>
 	</section>
 </StaffLayout>
 
@@ -43,6 +51,7 @@ import QRScanner from '../../components/QRScanner.astro';
 		const qrInput = document.getElementById('qr-token') as HTMLInputElement;
 		const resultOverlay = document.getElementById('result-overlay');
 		const closeResultBtn = document.getElementById('close-result');
+		const processingOverlay = document.getElementById('processing-overlay');
 
 		tabs.forEach(tab => {
 			tab.addEventListener('click', () => {
@@ -61,6 +70,7 @@ import QRScanner from '../../components/QRScanner.astro';
 		async function verifyToken(token: string) {
 			if (isVerifying) return;
 			isVerifying = true;
+			processingOverlay?.classList.remove('hidden');
 
 			try {
 				const response = await fetch('/api/staff/verify-qr', {
@@ -69,8 +79,10 @@ import QRScanner from '../../components/QRScanner.astro';
 					body: JSON.stringify({ token })
 				});
 				const result = await response.json();
+				processingOverlay?.classList.add('hidden');
 				showResult(result);
 			} catch (error) {
+				processingOverlay?.classList.add('hidden');
 				console.error('Verification failed', error);
 			} finally {
 				isVerifying = false;
@@ -251,6 +263,43 @@ import QRScanner from '../../components/QRScanner.astro';
 
 	.result-card.success h2 { color: #81c784; }
 	.result-card.error   h2 { color: #ef9a9a; }
+
+	/* Processing Card */
+	.processing-card {
+		background: rgba(255, 255, 255, 0.05);
+		backdrop-filter: blur(10px);
+		padding: 3rem 2rem;
+		border-radius: var(--radius-lg);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		max-width: 320px;
+		width: 100%;
+		text-align: center;
+		color: white;
+	}
+
+	.processing-card h2 {
+		margin: 1.5rem 0 0.5rem;
+		font-size: 1.25rem;
+	}
+
+	.processing-card p {
+		color: var(--color-text-muted);
+		font-size: 0.9rem;
+	}
+
+	.spinner {
+		width: 50px;
+		height: 50px;
+		border: 3px solid rgba(255, 255, 255, 0.1);
+		border-radius: 50%;
+		border-top-color: var(--color-button);
+		margin: 0 auto;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
 
 	.result-details {
 		margin: 1.25rem 0;
