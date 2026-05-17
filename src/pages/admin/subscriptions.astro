@@ -32,6 +32,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 							<th>Actions</th>
 						</tr>
 					</thead>
+					<tbody id="table-loader" class="hidden">
+						<tr>
+							<td colspan="6">
+								<div class="table-loader">
+									<div class="spinner"></div>
+									<p>Loading subscriptions...</p>
+								</div>
+							</td>
+						</tr>
+					</tbody>
 					<tbody id="subs-table-body"></tbody>
 				</table>
 				<div id="empty-state" class="empty-state hidden">
@@ -50,8 +60,24 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 			</div>
 			<div class="selection-list-container">
 				<table class="selection-table">
+					<thead>
+						<tr>
+							<th>Member Info</th>
+							<th style="text-align: right;">Action</th>
+						</tr>
+					</thead>
+					<tbody id="selection-table-loader" class="hidden">
+						<tr>
+							<td colspan="2">
+								<div class="table-loader">
+									<div class="spinner"></div>
+									<p>Searching members...</p>
+								</div>
+							</td>
+						</tr>
+					</tbody>
 					<tbody id="member-selection-list">
-						<tr><td class="empty-row">Type to search for a member.</td></tr>
+						<tr><td colspan="2" class="empty-row">Type to search for a member.</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -150,10 +176,22 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 		}
 
 		async function loadSubscriptions(query = '') {
-			const url = query ? `/api/admin/subscriptions?q=${encodeURIComponent(query)}` : '/api/admin/subscriptions';
-			const res = await fetch(url);
-			subscriptions = await res.json();
-			renderTable();
+			const loader = document.getElementById('table-loader');
+			if (tableBody) tableBody.innerHTML = '';
+			emptyState?.classList.add('hidden');
+			loader?.classList.remove('hidden');
+
+			try {
+				const url = query ? `/api/admin/subscriptions?q=${encodeURIComponent(query)}` : '/api/admin/subscriptions';
+				const res = await fetch(url);
+				if (!res.ok) throw new Error(await res.text());
+				subscriptions = await res.json();
+				renderTable();
+			} catch (e: any) {
+				window.showToast(e.message || 'Failed to load subscriptions.', 'error');
+			} finally {
+				loader?.classList.add('hidden');
+			}
 		}
 
 		function renderTable() {
@@ -230,33 +268,46 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 		closeSelectBtn?.addEventListener('click', () => selectModal?.classList.add('hidden'));
 
 		async function searchMembersForSub(q: string) {
+			const selLoader = document.getElementById('selection-table-loader');
 			if (!q.trim()) {
-				if (selectionList) selectionList.innerHTML = '<tr><td class="empty-row">Type to search for a member.</td></tr>';
+				if (selectionList) selectionList.innerHTML = '<tr><td colspan="2" class="empty-row">Type to search for a member.</td></tr>';
+				selLoader?.classList.add('hidden');
 				return;
 			}
-			const res = await fetch(`/api/admin/members?q=${encodeURIComponent(q)}`);
-			members = await res.json();
-			if (!selectionList) return;
-			if (!members.length) {
-				selectionList.innerHTML = '<tr><td class="empty-row">No members found.</td></tr>';
-				return;
-			}
-			selectionList.innerHTML = members.map(m => `
-				<tr class="selectable-row" data-id="${m.id}">
-					<td>
-						<strong>${m.name}</strong><br/>
-						<small class="text-muted">${m.email}</small>
-					</td>
-					<td class="text-action">Select →</td>
-				</tr>
-			`).join('');
+			
+			if (selectionList) selectionList.innerHTML = '';
+			selLoader?.classList.remove('hidden');
 
-			selectionList.querySelectorAll('.selectable-row').forEach(row => {
-				row.addEventListener('click', e => {
-					const id = (e.currentTarget as HTMLElement).dataset.id;
-					if (id) handleSelectMemberForSub(id);
+			try {
+				const res = await fetch(`/api/admin/members?q=${encodeURIComponent(q)}`);
+				if (!res.ok) throw new Error(await res.text());
+				members = await res.json();
+				if (!selectionList) return;
+				if (!members.length) {
+					selectionList.innerHTML = '<tr><td colspan="2" class="empty-row">No members found.</td></tr>';
+					return;
+				}
+				selectionList.innerHTML = members.map(m => `
+					<tr class="selectable-row" data-id="${m.id}">
+						<td>
+							<strong>${m.name}</strong><br/>
+							<small class="text-muted">${m.email}</small>
+						</td>
+						<td class="text-action">Select →</td>
+					</tr>
+				`).join('');
+
+				selectionList.querySelectorAll('.selectable-row').forEach(row => {
+					row.addEventListener('click', e => {
+						const id = (e.currentTarget as HTMLElement).dataset.id;
+						if (id) handleSelectMemberForSub(id);
+					});
 				});
-			});
+			} catch (e: any) {
+				window.showToast(e.message || 'Search failed.', 'error');
+			} finally {
+				selLoader?.classList.add('hidden');
+			}
 		}
 
 		function handleSelectMemberForSub(id: string) {

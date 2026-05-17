@@ -29,14 +29,25 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 			if (!query) return;
 
 			searchBtn?.classList.add('loading');
-			if (resultsContainer) resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
+			if (resultsContainer) {
+				resultsContainer.innerHTML = `
+					<div class="table-loader">
+						<div class="spinner"></div>
+						<p>Searching for members...</p>
+					</div>
+				`;
+			}
 
 			try {
 				const response = await fetch(`/api/staff/search-member?q=${encodeURIComponent(query)}`);
+				if (!response.ok) throw new Error(await response.text());
 				const results = await response.json();
 				displayResults(results);
-			} catch (error) {
-				if (resultsContainer) resultsContainer.innerHTML = '<div class="error">Search failed.</div>';
+			} catch (error: any) {
+				window.showToast(error.message || 'Search failed.', 'error');
+				if (resultsContainer) {
+					resultsContainer.innerHTML = '<p class="placeholder-msg">Search failed. Please try again.</p>';
+				}
 			} finally {
 				searchBtn?.classList.remove('loading');
 			}

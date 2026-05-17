@@ -28,12 +28,21 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 							<th>Action</th>
 						</tr>
 					</thead>
-					<tbody id="member-list-body">
+					<tbody id="table-loader" class="hidden">
 						<tr>
-							<td colspan="5" class="empty-row">Loading members…</td>
+							<td colspan="5">
+								<div class="table-loader">
+									<div class="spinner"></div>
+									<p>Loading members...</p>
+								</div>
+							</td>
 						</tr>
 					</tbody>
+					<tbody id="member-list-body"></tbody>
 				</table>
+				<div id="empty-state" class="empty-state hidden">
+					<p>No members found.</p>
+				</div>
 			</div>
 		</div>
 	</section>
@@ -92,13 +101,23 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 		let members: any[] = [];
 		let selectedMemberId = '';
 
+		const emptyState  = document.getElementById('empty-state');
+
 		async function loadMembers(query = '') {
+			const loader = document.getElementById('table-loader');
+			if (listBody) listBody.innerHTML = '';
+			emptyState?.classList.add('hidden');
+			loader?.classList.remove('hidden');
+
 			try {
 				const res = await fetch(`/api/staff/search-member?q=${encodeURIComponent(query)}`);
+				if (!res.ok) throw new Error(await res.text());
 				members = await res.json();
 				renderList();
-			} catch {
-				window.showToast('Failed to load members.', 'error');
+			} catch (e: any) {
+				window.showToast(e.message || 'Failed to load members.', 'error');
+			} finally {
+				loader?.classList.add('hidden');
 			}
 		}
 
@@ -306,6 +325,12 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 	.empty-row {
 		text-align: center;
 		padding: 3rem !important;
+		color: var(--color-text-subtle);
+	}
+
+	.empty-state {
+		text-align: center;
+		padding: 3rem 2rem;
 		color: var(--color-text-subtle);
 	}
 

@@ -30,6 +30,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 							<th>Actions</th>
 						</tr>
 					</thead>
+					<tbody id="table-loader" class="hidden">
+						<tr>
+							<td colspan="4">
+								<div class="table-loader">
+									<div class="spinner"></div>
+									<p>Loading staff...</p>
+								</div>
+							</td>
+						</tr>
+					</tbody>
 					<tbody id="staff-table-body"></tbody>
 				</table>
 				<div id="empty-state" class="empty-state hidden">
@@ -114,12 +124,20 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 		}
 
 		async function loadStaff(query = '') {
+			const loader = document.getElementById('table-loader');
+			if (tableBody) tableBody.innerHTML = '';
+			emptyState?.classList.add('hidden');
+			loader?.classList.remove('hidden');
+
 			try {
 				const res = await fetch(`/api/admin/staff?q=${encodeURIComponent(query)}`);
+				if (!res.ok) throw new Error(await res.text());
 				staffMembers = await res.json();
 				renderTable();
-			} catch {
-				window.showToast('Failed to load staff.', 'error');
+			} catch (e: any) {
+				window.showToast(e.message || 'Failed to load staff.', 'error');
+			} finally {
+				loader?.classList.add('hidden');
 			}
 		}
 

@@ -34,6 +34,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 							<th>Result</th>
 						</tr>
 					</thead>
+					<tbody id="table-loader" class="hidden">
+						<tr>
+							<td colspan="5">
+								<div class="table-loader">
+									<div class="spinner"></div>
+									<p>Loading access logs...</p>
+								</div>
+							</td>
+						</tr>
+					</tbody>
 					<tbody id="logs-table-body"></tbody>
 				</table>
 				<div id="empty-state" class="empty-state hidden">
@@ -69,11 +79,23 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 		}
 
 		async function loadLogs(query = '') {
-			const url = query ? `/api/admin/logs?memberId=${encodeURIComponent(query)}` : '/api/admin/logs';
-			const res = await fetch(url);
-			logs = await res.json();
-			renderTable();
-			renderStats();
+			const loader = document.getElementById('table-loader');
+			if (tableBody) tableBody.innerHTML = '';
+			emptyState?.classList.add('hidden');
+			loader?.classList.remove('hidden');
+
+			try {
+				const url = query ? `/api/admin/logs?memberId=${encodeURIComponent(query)}` : '/api/admin/logs';
+				const res = await fetch(url);
+				if (!res.ok) throw new Error(await res.text());
+				logs = await res.json();
+				renderTable();
+				renderStats();
+			} catch (e: any) {
+				window.showToast(e.message || 'Failed to load logs.', 'error');
+			} finally {
+				loader?.classList.add('hidden');
+			}
 		}
 
 		function renderTable() {

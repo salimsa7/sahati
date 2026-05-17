@@ -78,12 +78,13 @@ import QRScanner from '../../components/QRScanner.astro';
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ token })
 				});
+				if (!response.ok) throw new Error(await response.text());
 				const result = await response.json();
 				processingOverlay?.classList.add('hidden');
 				showResult(result);
-			} catch (error) {
+			} catch (error: any) {
 				processingOverlay?.classList.add('hidden');
-				console.error('Verification failed', error);
+				window.showToast(error.message || 'Verification failed. Please try again.', 'error');
 			} finally {
 				isVerifying = false;
 			}
